@@ -36,7 +36,7 @@ jobs:
           from diagrams import Diagram, Cluster, Edge
           from diagrams.azure.compute import AppServices
           from diagrams.azure.database import SQLDatabases
-          from diagrams.azure.general import ResourceGroups
+          from diagrams.azure.general import Subscriptions
           from diagrams.azure.network import Firewalls
           from diagrams.azure.web import AppServicePlans
           from diagrams.onprem.client import Users
