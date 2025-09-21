@@ -319,7 +319,6 @@ El siguiente diagrama muestra la arquitectura de clases del backend de la aplica
 *Diagrama generado automáticamente*
 
 ## 📊 Diagrama de Infraestructura
-
 ## 📊 Diagrama de Infraestructura
 
 El siguiente diagrama muestra la arquitectura de la infraestructura desplegada en Azure:
@@ -343,6 +342,32 @@ El siguiente diagrama muestra la arquitectura de la infraestructura desplegada e
 *Diagrama generado automáticamente*
 
 ## 🏗️ Diagrama de Clases
+## 🏗️ Diagrama de Clases
+
+El siguiente diagrama muestra la arquitectura de clases del backend de la aplicación:
+
+![Diagrama de Clases](docs/class_diagram.png)
+
+### Arquitectura por Capas:
+
+#### 📁 Models (Modelos de Dominio)
+- User: Gestión de usuarios del sistema
+- Project: Representación de proyectos
+- ProjectTask: Tareas dentro de proyectos
+- TaskComment: Comentarios en tareas
+
+#### 📁 Services (Servicios de Negocio)
+- UserService: Lógica de usuarios y autenticación
+- ProjectService: Lógica de gestión de proyectos
+- TaskService: Lógica de gestión de tareas
+- JwtService: Gestión de tokens de autenticación
+
+#### 📁 Controllers (Controladores API)
+- UsersController: Endpoints de usuarios
+- ProjectsController: Endpoints de proyectos
+- TasksController: Endpoints de tareas
+
+*Diagrama generado automáticamente*
 
 ## 🏗️ Diagrama de Clases
 
@@ -368,5 +393,27 @@ El siguiente diagrama muestra la arquitectura de clases del backend de la aplica
 - UsersController: Endpoints de usuarios
 - ProjectsController: Endpoints de proyectos
 - TasksController: Endpoints de tareas
+
+*Diagrama generado automáticamente*
+
+## 📊 Diagrama de Infraestructura
+
+El siguiente diagrama muestra la arquitectura de la infraestructura desplegada en Azure:
+
+![Diagrama de Infraestructura](docs/infrastructure_diagram.png)
+
+### Componentes de la Infraestructura:
+
+- **Resource Group**: upt-arg-978 - Contenedor de todos los recursos
+- **Frontend**: Aplicación web (Angular/React) desplegada en Azure App Service
+- **Backend API**: API REST en .NET Core desplegada en Azure App Service
+- **Base de Datos**: SQL Server upt-dbs-978 con base de datos shorten
+- **Firewall**: Reglas de acceso público para conectividad externa
+
+### Flujo de Datos:
+1. Los usuarios acceden a la aplicación frontend via HTTPS
+2. El frontend realiza llamadas a la API backend
+3. La API se conecta a SQL Server para operaciones de datos
+4. Las reglas de firewall permiten el acceso controlado a la base de datos
 
 *Diagrama generado automáticamente*
