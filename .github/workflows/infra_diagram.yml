@@ -37,7 +37,7 @@ jobs:
           from diagrams.azure.compute import AppServices
           from diagrams.azure.database import SQLDatabases
           from diagrams.azure.general import Subscriptions
-          from diagrams.azure.network import Firewalls
+          from diagrams.azure.network import ApplicationGateway
           from diagrams.azure.web import AppServicePlans
           from diagrams.onprem.client import Users
           from diagrams.programming.flowchart import StartEnd
@@ -74,16 +74,16 @@ jobs:
                           api = AppServices("API .NET Core\n(Project Management)")
                       
                       with Cluster("Database"):
-                          sql_server = SQLDatabases("SQL Server\nupt-dbs-978")
-                          firewall = Firewalls("Firewall Rules\nPublic Access")
+                          sql_server = SQLDatabases("SQL Server\nupt-dbs-996")
+                          gateway = ApplicationGateway("Network Security\nFirewall Rules")
                           sql_db = SQLDatabases("Database: shorten")
               
               # Define connections
               users >> Edge(label="HTTPS", style="bold") >> frontend
               frontend >> Edge(label="API Calls", style="bold") >> api
               api >> Edge(label="SQL Connection", style="bold") >> sql_server
-              sql_server >> firewall
-              firewall >> sql_db
+              sql_server >> gateway
+              gateway >> sql_db
 
           print("✅ Diagrama de infraestructura generado exitosamente")
           EOF
