@@ -328,6 +328,7 @@
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.AspNetCore.OpenApi.dll
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.AspNetCore.TestHost.dll
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.Bcl.AsyncInterfaces.dll
+/home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.Bcl.TimeProvider.dll
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.VisualStudio.CodeCoverage.Shim.dll
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.Data.SqlClient.dll
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/Microsoft.Data.Sqlite.dll
