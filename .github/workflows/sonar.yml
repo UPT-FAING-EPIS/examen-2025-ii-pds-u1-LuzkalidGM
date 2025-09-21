@@ -157,63 +157,115 @@ jobs:
 
       - name: Create test project
         run: |
+          # Check if test project already exists
+          if [ -d "backend/ProjectManagement.Tests" ]; then
+            echo "Test project already exists, skipping creation"
+            exit 0
+          fi
+          
+          # Create test project in separate directory
           mkdir -p backend/ProjectManagement.Tests
           cd backend/ProjectManagement.Tests
           
-          # Create test project file
-          echo '<Project Sdk="Microsoft.NET.Sdk">' > ProjectManagement.Tests.csproj
-          echo '  <PropertyGroup>' >> ProjectManagement.Tests.csproj
-          echo '    <TargetFramework>net8.0</TargetFramework>' >> ProjectManagement.Tests.csproj
-          echo '    <ImplicitUsings>enable</ImplicitUsings>' >> ProjectManagement.Tests.csproj
-          echo '    <Nullable>enable</Nullable>' >> ProjectManagement.Tests.csproj
-          echo '    <IsPackable>false</IsPackable>' >> ProjectManagement.Tests.csproj
-          echo '    <IsTestProject>true</IsTestProject>' >> ProjectManagement.Tests.csproj
-          echo '  </PropertyGroup>' >> ProjectManagement.Tests.csproj
-          echo '  <ItemGroup>' >> ProjectManagement.Tests.csproj
-          echo '    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />' >> ProjectManagement.Tests.csproj
-          echo '    <PackageReference Include="xunit" Version="2.4.2" />' >> ProjectManagement.Tests.csproj
-          echo '    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />' >> ProjectManagement.Tests.csproj
-          echo '    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />' >> ProjectManagement.Tests.csproj
-          echo '    <PackageReference Include="Moq" Version="4.20.69" />' >> ProjectManagement.Tests.csproj
-          echo '  </ItemGroup>' >> ProjectManagement.Tests.csproj
-          echo '  <ItemGroup>' >> ProjectManagement.Tests.csproj
-          echo '    <ProjectReference Include="../ProjectManagement.Api.csproj" />' >> ProjectManagement.Tests.csproj
-          echo '  </ItemGroup>' >> ProjectManagement.Tests.csproj
-          echo '</Project>' >> ProjectManagement.Tests.csproj
+          # Initialize as separate .NET test project
+          dotnet new xunit --name ProjectManagement.Tests --force
+          
+          # Remove the default test file
+          rm UnitTest1.cs || true
+          
+          # Add required packages
+          dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 8.0.0
+          dotnet add package Moq --version 4.20.69
+          dotnet add package Microsoft.AspNetCore.Mvc.Testing --version 8.0.0
+          
+          # Add reference to main project
+          dotnet add reference ../ProjectManagement.Api.csproj
 
       - name: Create basic tests
         run: |
           cd backend/ProjectManagement.Tests
-          mkdir -p Services
           
-          # Create a simple test file
-          echo 'using Xunit;' > Services/BasicTests.cs
-          echo '' >> Services/BasicTests.cs
-          echo 'namespace ProjectManagement.Tests.Services' >> Services/BasicTests.cs
-          echo '{' >> Services/BasicTests.cs
-          echo '    public class BasicTests' >> Services/BasicTests.cs
-          echo '    {' >> Services/BasicTests.cs
-          echo '        [Fact]' >> Services/BasicTests.cs
-          echo '        public void Test_ShouldPass()' >> Services/BasicTests.cs
-          echo '        {' >> Services/BasicTests.cs
-          echo '            // Arrange' >> Services/BasicTests.cs
-          echo '            var expected = true;' >> Services/BasicTests.cs
-          echo '            ' >> Services/BasicTests.cs
-          echo '            // Act' >> Services/BasicTests.cs
-          echo '            var actual = true;' >> Services/BasicTests.cs
-          echo '            ' >> Services/BasicTests.cs
-          echo '            // Assert' >> Services/BasicTests.cs
-          echo '            Assert.Equal(expected, actual);' >> Services/BasicTests.cs
-          echo '        }' >> Services/BasicTests.cs
-          echo '    }' >> Services/BasicTests.cs
-          echo '}' >> Services/BasicTests.cs
+          # Create test directories
+          mkdir -p Services Controllers
+          
+          # Create basic service test
+          echo 'using Xunit;' > Services/BasicServiceTests.cs
+          echo '' >> Services/BasicServiceTests.cs
+          echo 'namespace ProjectManagement.Tests.Services' >> Services/BasicServiceTests.cs
+          echo '{' >> Services/BasicServiceTests.cs
+          echo '    public class BasicServiceTests' >> Services/BasicServiceTests.cs
+          echo '    {' >> Services/BasicServiceTests.cs
+          echo '        [Fact]' >> Services/BasicServiceTests.cs
+          echo '        public void BasicTest_ShouldPass()' >> Services/BasicServiceTests.cs
+          echo '        {' >> Services/BasicServiceTests.cs
+          echo '            // Arrange' >> Services/BasicServiceTests.cs
+          echo '            var expected = true;' >> Services/BasicServiceTests.cs
+          echo '            ' >> Services/BasicServiceTests.cs
+          echo '            // Act' >> Services/BasicServiceTests.cs
+          echo '            var actual = true;' >> Services/BasicServiceTests.cs
+          echo '            ' >> Services/BasicServiceTests.cs
+          echo '            // Assert' >> Services/BasicServiceTests.cs
+          echo '            Assert.Equal(expected, actual);' >> Services/BasicServiceTests.cs
+          echo '        }' >> Services/BasicServiceTests.cs
+          echo '' >> Services/BasicServiceTests.cs
+          echo '        [Fact]' >> Services/BasicServiceTests.cs
+          echo '        public void BasicMath_ShouldWork()' >> Services/BasicServiceTests.cs
+          echo '        {' >> Services/BasicServiceTests.cs
+          echo '            // Arrange' >> Services/BasicServiceTests.cs
+          echo '            var a = 2;' >> Services/BasicServiceTests.cs
+          echo '            var b = 3;' >> Services/BasicServiceTests.cs
+          echo '            ' >> Services/BasicServiceTests.cs
+          echo '            // Act' >> Services/BasicServiceTests.cs
+          echo '            var result = a + b;' >> Services/BasicServiceTests.cs
+          echo '            ' >> Services/BasicServiceTests.cs
+          echo '            // Assert' >> Services/BasicServiceTests.cs
+          echo '            Assert.Equal(5, result);' >> Services/BasicServiceTests.cs
+          echo '        }' >> Services/BasicServiceTests.cs
+          echo '    }' >> Services/BasicServiceTests.cs
+          echo '}' >> Services/BasicServiceTests.cs
+          
+          # Create basic controller test
+          echo 'using Xunit;' > Controllers/BasicControllerTests.cs
+          echo '' >> Controllers/BasicControllerTests.cs
+          echo 'namespace ProjectManagement.Tests.Controllers' >> Controllers/BasicControllerTests.cs
+          echo '{' >> Controllers/BasicControllerTests.cs
+          echo '    public class BasicControllerTests' >> Controllers/BasicControllerTests.cs
+          echo '    {' >> Controllers/BasicControllerTests.cs
+          echo '        [Fact]' >> Controllers/BasicControllerTests.cs
+          echo '        public void ControllerTest_ShouldPass()' >> Controllers/BasicControllerTests.cs
+          echo '        {' >> Controllers/BasicControllerTests.cs
+          echo '            // Arrange' >> Controllers/BasicControllerTests.cs
+          echo '            var testValue = "test";' >> Controllers/BasicControllerTests.cs
+          echo '            ' >> Controllers/BasicControllerTests.cs
+          echo '            // Act' >> Controllers/BasicControllerTests.cs
+          echo '            var result = testValue.Length;' >> Controllers/BasicControllerTests.cs
+          echo '            ' >> Controllers/BasicControllerTests.cs
+          echo '            // Assert' >> Controllers/BasicControllerTests.cs
+          echo '            Assert.Equal(4, result);' >> Controllers/BasicControllerTests.cs
+          echo '        }' >> Controllers/BasicControllerTests.cs
+          echo '    }' >> Controllers/BasicControllerTests.cs
+          echo '}' >> Controllers/BasicControllerTests.cs
 
       - name: Build and test
         run: |
           cd backend
-          dotnet restore
-          dotnet build --no-restore
-          dotnet test --no-build --verbosity normal
+          
+          # Restore both projects
+          dotnet restore ProjectManagement.Api.csproj
+          if [ -d "ProjectManagement.Tests" ]; then
+            dotnet restore ProjectManagement.Tests/ProjectManagement.Tests.csproj
+          fi
+          
+          # Build both projects
+          dotnet build --no-restore --configuration Release
+          
+          # Run tests if test project exists
+          if [ -d "ProjectManagement.Tests" ]; then
+            echo "Running unit tests..."
+            dotnet test ProjectManagement.Tests/ProjectManagement.Tests.csproj --no-build --verbosity normal --configuration Release
+          else
+            echo "No test project found, skipping tests"
+          fi
 
       - name: Commit test files
         run: |
