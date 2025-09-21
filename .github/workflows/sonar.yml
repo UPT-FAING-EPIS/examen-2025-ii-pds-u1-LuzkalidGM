@@ -192,6 +192,37 @@ jobs:
           echo "📁 Project structure:"
           ls -la
 
+      - name: Exclude test files from main project
+        run: |
+          cd backend
+          
+          # Add exclusion to main project file to prevent test files from being compiled
+          if ! grep -q "ProjectManagement.Tests" ProjectManagement.Api.csproj; then
+            # Create exclusion content
+            cat >> ProjectManagement.Api.csproj.tmp << 'EOF'
+          </Project>
+          EOF
+            
+            # Remove closing Project tag temporarily
+            sed 's|</Project>||g' ProjectManagement.Api.csproj > temp.csproj
+            
+            # Add exclusions and closing tag
+            cat temp.csproj > ProjectManagement.Api.csproj
+            echo '  <ItemGroup>' >> ProjectManagement.Api.csproj
+            echo '    <Compile Remove="ProjectManagement.Tests/**" />' >> ProjectManagement.Api.csproj
+            echo '    <Content Remove="ProjectManagement.Tests/**" />' >> ProjectManagement.Api.csproj
+            echo '    <EmbeddedResource Remove="ProjectManagement.Tests/**" />' >> ProjectManagement.Api.csproj
+            echo '    <None Remove="ProjectManagement.Tests/**" />' >> ProjectManagement.Api.csproj
+            echo '  </ItemGroup>' >> ProjectManagement.Api.csproj
+            echo '</Project>' >> ProjectManagement.Api.csproj
+            
+            # Clean up
+            rm -f temp.csproj ProjectManagement.Api.csproj.tmp
+            echo "✅ Test exclusions added to main project"
+          else
+            echo "ℹ️ Test exclusions already present in main project"
+          fi
+
       - name: Create basic tests
         run: |
           cd backend/ProjectManagement.Tests
