@@ -1,0 +1,471 @@
+name: Database Initialization
+
+on:
+  workflow_dispatch:
+    inputs:
+      reset_database:
+        description: 'Reset database (WARNING: This will delete all data)'
+        required: false
+        default: 'false'
+        type: boolean
+      seed_sample_data:
+        description: 'Insert sample data for testing'
+        required: false
+        default: 'true'
+        type: boolean
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/Data/Migrations/**'
+      - '.github/workflows/database-init.yml'
+
+# Prevent concurrent database operations
+concurrency:
+  group: database-init
+  cancel-in-progress: false
+
+env:
+  # Azure SQL Database Configuration
+  DB_SERVER: "upt-dbs-996.database.windows.net"
+  DB_NAME: "shorten"
+  DB_USER: "adminuser"
+  DB_PASSWORD: "Admin123456"
+  CONNECTION_STRING: "Server=upt-dbs-996.database.windows.net;Database=shorten;User Id=adminuser;Password=Admin123456;TrustServerCertificate=true;MultipleActiveResultSets=true;"
+
+jobs:
+  database-setup:
+    name: Initialize Database Schema and Data
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Entity Framework Tools
+        run: |
+          dotnet tool install --global dotnet-ef --version 8.0.0
+
+      - name: Restore dependencies
+        run: |
+          cd backend
+          dotnet restore ProjectManagement.Api.csproj
+
+      - name: Test database connection
+        run: |
+          cd backend
+          echo "🔌 Testing database connection..."
+          
+          # Create a simple connection test
+          cat > TestConnection.cs << 'EOF'
+          using Microsoft.Data.SqlClient;
+          using System;
+          
+          class Program
+          {
+              static void Main()
+              {
+                  try
+                  {
+                      var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+                      using var connection = new SqlConnection(connectionString);
+                      connection.Open();
+                      Console.WriteLine("✅ Database connection successful!");
+                      
+                      var command = new SqlCommand("SELECT @@VERSION", connection);
+                      var version = command.ExecuteScalar();
+                      Console.WriteLine($"📊 SQL Server Version: {version}");
+                  }
+                  catch (Exception ex)
+                  {
+                      Console.WriteLine($"❌ Connection failed: {ex.Message}");
+                      Environment.Exit(1);
+                  }
+              }
+          }
+          EOF
+          
+          # Compile and run test
+          dotnet add package Microsoft.Data.SqlClient --version 5.1.1
+          dotnet run TestConnection.cs
+
+      - name: Create or update database migrations
+        run: |
+          cd backend
+          echo "🔄 Creating database migrations..."
+          
+          # Remove existing migrations if reset is requested
+          if [ "${{ github.event.inputs.reset_database }}" = "true" ]; then
+            echo "⚠️ Resetting database - removing existing migrations"
+            rm -rf Data/Migrations/ || true
+          fi
+          
+          # Create migrations directory if it doesn't exist
+          mkdir -p Data/Migrations
+          
+          # Add initial migration if none exist
+          if [ ! -d "Data/Migrations" ] || [ -z "$(ls -A Data/Migrations 2>/dev/null)" ]; then
+            echo "📝 Creating initial migration..."
+            dotnet ef migrations add InitialCreate --output-dir Data/Migrations
+          else
+            echo "ℹ️ Migrations already exist"
+          fi
+
+      - name: Apply database migrations
+        run: |
+          cd backend
+          echo "🚀 Applying database migrations..."
+          
+          # Set connection string for EF Core
+          export ConnectionStrings__DefaultConnection="$CONNECTION_STRING"
+          
+          # Apply migrations
+          dotnet ef database update --connection "$CONNECTION_STRING"
+          
+          echo "✅ Database schema updated successfully"
+
+      - name: Create database tables (Manual SQL)
+        run: |
+          cd backend
+          echo "🏗️ Creating database tables..."
+          
+          # Create comprehensive SQL script for project management system
+          cat > CreateTables.sql << 'EOF'
+          -- Users table
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
+          CREATE TABLE Users (
+              Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+              Email NVARCHAR(100) NOT NULL UNIQUE,
+              FirstName NVARCHAR(50) NOT NULL,
+              LastName NVARCHAR(50) NOT NULL,
+              PasswordHash NVARCHAR(255) NOT NULL,
+              Role NVARCHAR(20) NOT NULL DEFAULT 'User',
+              IsActive BIT NOT NULL DEFAULT 1,
+              CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              UpdatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+          );
+          
+          -- Projects table
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Projects' AND xtype='U')
+          CREATE TABLE Projects (
+              Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+              Name NVARCHAR(100) NOT NULL,
+              Description NVARCHAR(500),
+              StartDate DATETIME2 NOT NULL,
+              EndDate DATETIME2,
+              Status NVARCHAR(20) NOT NULL DEFAULT 'Planning',
+              Priority NVARCHAR(10) NOT NULL DEFAULT 'Medium',
+              OwnerId UNIQUEIDENTIFIER NOT NULL,
+              CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              UpdatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              FOREIGN KEY (OwnerId) REFERENCES Users(Id)
+          );
+          
+          -- Tasks table
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Tasks' AND xtype='U')
+          CREATE TABLE Tasks (
+              Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+              Title NVARCHAR(100) NOT NULL,
+              Description NVARCHAR(1000),
+              Status NVARCHAR(20) NOT NULL DEFAULT 'Pending',
+              Priority NVARCHAR(10) NOT NULL DEFAULT 'Medium',
+              StartDate DATETIME2,
+              DueDate DATETIME2,
+              CompletedAt DATETIME2,
+              EstimatedHours DECIMAL(5,2),
+              ActualHours DECIMAL(5,2),
+              ProjectId UNIQUEIDENTIFIER NOT NULL,
+              AssignedToId UNIQUEIDENTIFIER,
+              CreatedById UNIQUEIDENTIFIER NOT NULL,
+              CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              UpdatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              FOREIGN KEY (ProjectId) REFERENCES Projects(Id) ON DELETE CASCADE,
+              FOREIGN KEY (AssignedToId) REFERENCES Users(Id),
+              FOREIGN KEY (CreatedById) REFERENCES Users(Id)
+          );
+          
+          -- Task Comments table
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TaskComments' AND xtype='U')
+          CREATE TABLE TaskComments (
+              Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+              Content NVARCHAR(1000) NOT NULL,
+              TaskId UNIQUEIDENTIFIER NOT NULL,
+              UserId UNIQUEIDENTIFIER NOT NULL,
+              CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              FOREIGN KEY (TaskId) REFERENCES Tasks(Id) ON DELETE CASCADE,
+              FOREIGN KEY (UserId) REFERENCES Users(Id)
+          );
+          
+          -- Project Members table (Many-to-Many)
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ProjectMembers' AND xtype='U')
+          CREATE TABLE ProjectMembers (
+              ProjectId UNIQUEIDENTIFIER NOT NULL,
+              UserId UNIQUEIDENTIFIER NOT NULL,
+              Role NVARCHAR(20) NOT NULL DEFAULT 'Member',
+              JoinedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+              PRIMARY KEY (ProjectId, UserId),
+              FOREIGN KEY (ProjectId) REFERENCES Projects(Id) ON DELETE CASCADE,
+              FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+          );
+          
+          -- Create indexes for better performance
+          IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Projects_OwnerId')
+          CREATE INDEX IX_Projects_OwnerId ON Projects(OwnerId);
+          
+          IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Tasks_ProjectId')
+          CREATE INDEX IX_Tasks_ProjectId ON Tasks(ProjectId);
+          
+          IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Tasks_AssignedToId')
+          CREATE INDEX IX_Tasks_AssignedToId ON Tasks(AssignedToId);
+          
+          IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_TaskComments_TaskId')
+          CREATE INDEX IX_TaskComments_TaskId ON TaskComments(TaskId);
+          
+          IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ProjectMembers_UserId')
+          CREATE INDEX IX_ProjectMembers_UserId ON ProjectMembers(UserId);
+          
+          PRINT '✅ Database tables created successfully';
+          EOF
+          
+          # Execute SQL script
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i CreateTables.sql
+
+      - name: Insert sample data
+        if: github.event.inputs.seed_sample_data == 'true' || github.event.inputs.seed_sample_data == ''
+        run: |
+          cd backend
+          echo "📊 Inserting sample data..."
+          
+          cat > SeedData.sql << 'EOF'
+          -- Insert sample users
+          DECLARE @AdminId UNIQUEIDENTIFIER = NEWID();
+          DECLARE @ProjectManagerId UNIQUEIDENTIFIER = NEWID();
+          DECLARE @DeveloperId UNIQUEIDENTIFIER = NEWID();
+          DECLARE @DesignerId UNIQUEIDENTIFIER = NEWID();
+          
+          IF NOT EXISTS (SELECT * FROM Users WHERE Email = 'admin@projectmanagement.com')
+          INSERT INTO Users (Id, Email, FirstName, LastName, PasswordHash, Role, IsActive, CreatedAt, UpdatedAt)
+          VALUES 
+              (@AdminId, 'admin@projectmanagement.com', 'Admin', 'System', '$2a$11$rQGvFj6KDjlxhCOdRp8VD.yScIeMzKojfHs7w8t2K6P8jTrS9tVQO', 'Admin', 1, GETUTCDATE(), GETUTCDATE()),
+              (@ProjectManagerId, 'pm@projectmanagement.com', 'Maria', 'Rodriguez', '$2a$11$rQGvFj6KDjlxhCOdRp8VD.yScIeMzKojfHs7w8t2K6P8jTrS9tVQO', 'ProjectManager', 1, GETUTCDATE(), GETUTCDATE()),
+              (@DeveloperId, 'developer@projectmanagement.com', 'Carlos', 'Sanchez', '$2a$11$rQGvFj6KDjlxhCOdRp8VD.yScIeMzKojfHs7w8t2K6P8jTrS9tVQO', 'User', 1, GETUTCDATE(), GETUTCDATE()),
+              (@DesignerId, 'designer@projectmanagement.com', 'Ana', 'Lopez', '$2a$11$rQGvFj6KDjlxhCOdRp8VD.yScIeMzKojfHs7w8t2K6P8jTrS9tVQO', 'User', 1, GETUTCDATE(), GETUTCDATE());
+          
+          -- Insert sample projects
+          DECLARE @Project1Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Project2Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Project3Id UNIQUEIDENTIFIER = NEWID();
+          
+          IF NOT EXISTS (SELECT * FROM Projects WHERE Name = 'Sistema de Gestión de Proyectos')
+          INSERT INTO Projects (Id, Name, Description, StartDate, EndDate, Status, Priority, OwnerId, CreatedAt, UpdatedAt)
+          VALUES 
+              (@Project1Id, 'Sistema de Gestión de Proyectos', 'Desarrollo completo del sistema de gestión de proyectos con backend .NET Core y frontend React', DATEADD(day, -30, GETUTCDATE()), DATEADD(day, 60, GETUTCDATE()), 'InProgress', 'High', @ProjectManagerId, GETUTCDATE(), GETUTCDATE()),
+              (@Project2Id, 'Migración a la Nube', 'Migración de infraestructura existente a Azure Cloud con Terraform', DATEADD(day, -15, GETUTCDATE()), DATEADD(day, 45, GETUTCDATE()), 'Planning', 'Medium', @AdminId, GETUTCDATE(), GETUTCDATE()),
+              (@Project3Id, 'Dashboard Analytics', 'Desarrollo de dashboard para análisis de métricas y reportes', GETUTCDATE(), DATEADD(day, 90, GETUTCDATE()), 'Planning', 'Low', @ProjectManagerId, GETUTCDATE(), GETUTCDATE());
+          
+          -- Insert project members
+          INSERT INTO ProjectMembers (ProjectId, UserId, Role, JoinedAt)
+          VALUES 
+              (@Project1Id, @ProjectManagerId, 'Owner', GETUTCDATE()),
+              (@Project1Id, @DeveloperId, 'Developer', GETUTCDATE()),
+              (@Project1Id, @DesignerId, 'Designer', GETUTCDATE()),
+              (@Project2Id, @AdminId, 'Owner', GETUTCDATE()),
+              (@Project2Id, @DeveloperId, 'Developer', GETUTCDATE()),
+              (@Project3Id, @ProjectManagerId, 'Owner', GETUTCDATE()),
+              (@Project3Id, @DesignerId, 'Designer', GETUTCDATE());
+          
+          -- Insert sample tasks for Project 1
+          DECLARE @Task1Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Task2Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Task3Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Task4Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Task5Id UNIQUEIDENTIFIER = NEWID();
+          
+          INSERT INTO Tasks (Id, Title, Description, Status, Priority, StartDate, DueDate, EstimatedHours, ProjectId, AssignedToId, CreatedById, CreatedAt, UpdatedAt)
+          VALUES 
+              (@Task1Id, 'Configurar Backend API', 'Configurar proyecto .NET Core con Entity Framework y JWT', 'Completed', 'High', DATEADD(day, -25, GETUTCDATE()), DATEADD(day, -20, GETUTCDATE()), 16.0, @Project1Id, @DeveloperId, @ProjectManagerId, GETUTCDATE(), GETUTCDATE()),
+              (@Task2Id, 'Diseñar Base de Datos', 'Crear esquema de base de datos y migraciones', 'Completed', 'High', DATEADD(day, -20, GETUTCDATE()), DATEADD(day, -15, GETUTCDATE()), 8.0, @Project1Id, @DeveloperId, @ProjectManagerId, GETUTCDATE(), GETUTCDATE()),
+              (@Task3Id, 'Implementar Autenticación', 'Sistema de autenticación JWT con roles', 'InProgress', 'High', DATEADD(day, -10, GETUTCDATE()), DATEADD(day, 5, GETUTCDATE()), 12.0, @Project1Id, @DeveloperId, @ProjectManagerId, GETUTCDATE(), GETUTCDATE()),
+              (@Task4Id, 'Crear Componentes React', 'Desarrollar componentes de UI para gestión de proyectos', 'Pending', 'Medium', GETUTCDATE(), DATEADD(day, 15, GETUTCDATE()), 20.0, @Project1Id, @DesignerId, @ProjectManagerId, GETUTCDATE(), GETUTCDATE()),
+              (@Task5Id, 'Implementar Dashboard', 'Dashboard principal con métricas y estadísticas', 'Pending', 'Medium', DATEADD(day, 10, GETUTCDATE()), DATEADD(day, 25, GETUTCDATE()), 16.0, @Project1Id, @DesignerId, @ProjectManagerId, GETUTCDATE(), GETUTCDATE());
+          
+          -- Insert sample tasks for Project 2
+          DECLARE @Task6Id UNIQUEIDENTIFIER = NEWID();
+          DECLARE @Task7Id UNIQUEIDENTIFIER = NEWID();
+          
+          INSERT INTO Tasks (Id, Title, Description, Status, Priority, StartDate, DueDate, EstimatedHours, ProjectId, AssignedToId, CreatedById, CreatedAt, UpdatedAt)
+          VALUES 
+              (@Task6Id, 'Configurar Terraform', 'Setup de infraestructura como código con Terraform', 'InProgress', 'High', DATEADD(day, -5, GETUTCDATE()), DATEADD(day, 10, GETUTCDATE()), 12.0, @Project2Id, @DeveloperId, @AdminId, GETUTCDATE(), GETUTCDATE()),
+              (@Task7Id, 'Migrar Base de Datos', 'Migración de BD local a Azure SQL Database', 'Pending', 'High', DATEADD(day, 5, GETUTCDATE()), DATEADD(day, 20, GETUTCDATE()), 8.0, @Project2Id, @DeveloperId, @AdminId, GETUTCDATE(), GETUTCDATE());
+          
+          -- Insert sample comments
+          INSERT INTO TaskComments (Id, Content, TaskId, UserId, CreatedAt)
+          VALUES 
+              (NEWID(), '✅ Backend API configurado correctamente con .NET Core 8.0 y Entity Framework', @Task1Id, @DeveloperId, DATEADD(day, -18, GETUTCDATE())),
+              (NEWID(), '📊 Esquema de base de datos creado con todas las relaciones necesarias', @Task2Id, @DeveloperId, DATEADD(day, -12, GETUTCDATE())),
+              (NEWID(), '🔐 Trabajando en la implementación de JWT. Ya tengo el login funcionando.', @Task3Id, @DeveloperId, DATEADD(day, -3, GETUTCDATE())),
+              (NEWID(), '🎨 Revisando el diseño de los componentes antes de implementar', @Task4Id, @DesignerId, DATEADD(day, -1, GETUTCDATE())),
+              (NEWID(), '🚀 Terraform configurado para Azure. Desplegando recursos...', @Task6Id, @DeveloperId, GETUTCDATE());
+          
+          PRINT '✅ Sample data inserted successfully';
+          PRINT '👥 Users created: admin@projectmanagement.com, pm@projectmanagement.com, developer@projectmanagement.com, designer@projectmanagement.com';
+          PRINT '📝 Projects created: 3 sample projects with tasks and comments';
+          PRINT '🔑 Default password for all users: Admin123456';
+          EOF
+          
+          # Execute seed data script
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i SeedData.sql
+
+      - name: Verify database setup
+        run: |
+          cd backend
+          echo "🔍 Verifying database setup..."
+          
+          cat > VerifySetup.sql << 'EOF'
+          -- Verify tables exist and have data
+          SELECT 'Users' as TableName, COUNT(*) as RecordCount FROM Users
+          UNION ALL
+          SELECT 'Projects', COUNT(*) FROM Projects
+          UNION ALL
+          SELECT 'Tasks', COUNT(*) FROM Tasks
+          UNION ALL
+          SELECT 'TaskComments', COUNT(*) FROM TaskComments
+          UNION ALL
+          SELECT 'ProjectMembers', COUNT(*) FROM ProjectMembers;
+          
+          -- Show sample project with tasks
+          SELECT 
+              p.Name as ProjectName,
+              p.Status as ProjectStatus,
+              COUNT(t.Id) as TaskCount,
+              u.FirstName + ' ' + u.LastName as Owner
+          FROM Projects p
+          LEFT JOIN Tasks t ON p.Id = t.ProjectId
+          INNER JOIN Users u ON p.OwnerId = u.Id
+          GROUP BY p.Name, p.Status, u.FirstName, u.LastName;
+          EOF
+          
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i VerifySetup.sql
+
+      - name: Update connection strings in application
+        run: |
+          cd backend
+          echo "🔧 Updating application configuration..."
+          
+          # Update appsettings.json if it exists
+          if [ -f "appsettings.json" ]; then
+            # Backup original
+            cp appsettings.json appsettings.json.bak
+            
+            # Update connection string using jq
+            jq --arg conn "$CONNECTION_STRING" '.ConnectionStrings.DefaultConnection = $conn' appsettings.json > appsettings.tmp && mv appsettings.tmp appsettings.json
+            echo "✅ Updated appsettings.json with production connection string"
+          fi
+          
+          # Create production appsettings if needed
+          if [ ! -f "appsettings.Production.json" ]; then
+            cat > appsettings.Production.json << EOF
+          {
+            "ConnectionStrings": {
+              "DefaultConnection": "$CONNECTION_STRING"
+            },
+            "Logging": {
+              "LogLevel": {
+                "Default": "Information",
+                "Microsoft.AspNetCore": "Warning"
+              }
+            },
+            "AllowedHosts": "*"
+          }
+          EOF
+            echo "✅ Created appsettings.Production.json"
+          fi
+
+      - name: Generate summary report
+        run: |
+          echo "## 🎯 Database Initialization Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 **Database Information:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server**: upt-dbs-996.database.windows.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: shorten" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tables Created**: Users, Projects, Tasks, TaskComments, ProjectMembers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 👥 **Sample Users Created:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Admin**: admin@projectmanagement.com (Role: Admin)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project Manager**: pm@projectmanagement.com (Role: ProjectManager)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Developer**: developer@projectmanagement.com (Role: User)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Designer**: designer@projectmanagement.com (Role: User)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Default Password**: Admin123456" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 **Sample Projects:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Sistema de Gestión de Proyectos (In Progress)" >> $GITHUB_STEP_SUMMARY
+          echo "- Migración a la Nube (Planning)" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard Analytics (Planning)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 **API Endpoints Available:**" >> $GITHUB_STEP_SUMMARY
+          echo "- `POST /api/auth/login` - Authentication" >> $GITHUB_STEP_SUMMARY
+          echo "- `GET/POST /api/projects` - Project management" >> $GITHUB_STEP_SUMMARY
+          echo "- `GET/POST /api/tasks` - Task management" >> $GITHUB_STEP_SUMMARY
+          echo "- `POST /api/tasks/{id}/comments` - Task comments" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ **Next Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Update your application's connection string to use the Azure database" >> $GITHUB_STEP_SUMMARY
+          echo "2. Deploy your backend API to connect to this database" >> $GITHUB_STEP_SUMMARY
+          echo "3. Test the authentication with the sample users" >> $GITHUB_STEP_SUMMARY
+          echo "4. Verify the project and task management features" >> $GITHUB_STEP_SUMMARY
+
+  commit-changes:
+    name: Commit Configuration Changes
+    runs-on: ubuntu-latest
+    needs: database-setup
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update project with database configuration
+        run: |
+          cd backend
+          
+          # Create or update database configuration class
+          mkdir -p Configuration
+          cat > Configuration/DatabaseConfig.cs << 'EOF'
+          namespace ProjectManagement.Api.Configuration
+          {
+              public class DatabaseConfig
+              {
+                  public const string AzureServer = "upt-dbs-996.database.windows.net";
+                  public const string DatabaseName = "shorten";
+                  public const string DefaultUser = "adminuser";
+                  
+                  public static string GetConnectionString(string? password = null)
+                  {
+                      var actualPassword = password ?? "Admin123456";
+                      return $"Server={AzureServer};Database={DatabaseName};User Id={DefaultUser};Password={actualPassword};TrustServerCertificate=true;MultipleActiveResultSets=true;";
+                  }
+              }
+          }
+          EOF
+          
+          echo "✅ Database configuration class created"
+
+      - name: Commit database configuration
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Database Init"
+          
+          git add .
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "🗄️ Add database configuration for Azure SQL - upt-dbs-996.database.windows.net"
+            
+            git push
+            echo "✅ Database configuration committed and pushed"
+          else
+            echo "ℹ️ No configuration changes to commit"
+          fi
