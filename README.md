@@ -344,6 +344,8 @@ El siguiente diagrama muestra la arquitectura de la infraestructura desplegada e
 
 ## 🏗️ Diagrama de Clases
 
+## 🏗️ Diagrama de Clases
+
 El siguiente diagrama muestra la arquitectura de clases del backend de la aplicación:
 
 ![Diagrama de Clases](docs/class_diagram.png)
