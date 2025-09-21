@@ -40,12 +40,19 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
+          
+      - name: Clear NuGet cache and setup
+        run: |
+          dotnet nuget locals all --clear
+          
       - name: Restore dependencies
         run: |
           cd backend
-          dotnet clean
-          dotnet restore
+          rm -rf obj/ bin/ || true
+          rm -f nuget.config || true
+          find . -name "*.cache" -delete || true
+          find . -name "*.props" -delete || true
+          dotnet restore --no-cache --force --verbosity normal
 
       - name: Build application
         run: |

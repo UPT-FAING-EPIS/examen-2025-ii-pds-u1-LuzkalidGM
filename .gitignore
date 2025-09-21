@@ -1,1 +1,25 @@
 node_modules
+
+# .NET Build artifacts
+*/bin/
+*/obj/
+**/*.cache
+**/*.props
+**/project.assets.json
+**/project.nuget.cache
+**/.vs/
+**/*.user
+**/*.suo
+**/*.csproj.user
+
+# VS Code
+.vscode/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
