@@ -66,7 +66,7 @@ jobs:
         run: |
           cd backend
           ../.sonar/scanner/dotnet-sonarscanner begin \
-            /k:"luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM" \
+            /k:"luzkalidgm_exaui" \
             /o:"luzkalidgm" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
@@ -84,7 +84,7 @@ jobs:
       - name: Check Quality Gate
         run: |
           echo "✅ SonarQube analysis completed successfully"
-          echo "📊 Check the quality gate results at: https://sonarcloud.io/project/overview?id=luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM"
+          echo "📊 Check the quality gate results at: https://sonarcloud.io/project/overview?id=luzkalidgm_exaui"
 
       - name: Generate quality report
         if: always()
@@ -97,9 +97,9 @@ jobs:
           echo "- 🔄 **Duplicación objetivo**: ≤10 líneas" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Enlaces:" >> $GITHUB_STEP_SUMMARY
-          echo "- [📈 Ver reporte completo en SonarCloud](https://sonarcloud.io/project/overview?id=luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM)" >> $GITHUB_STEP_SUMMARY
-          echo "- [🐛 Issues encontrados](https://sonarcloud.io/project/issues?id=luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM&types=BUG)" >> $GITHUB_STEP_SUMMARY
-          echo "- [🔐 Vulnerabilidades](https://sonarcloud.io/project/issues?id=luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM&types=VULNERABILITY)" >> $GITHUB_STEP_SUMMARY
+          echo "- [📈 Ver reporte completo en SonarCloud](https://sonarcloud.io/project/overview?id=luzkalidgm_exaui)" >> $GITHUB_STEP_SUMMARY
+          echo "- [🐛 Issues encontrados](https://sonarcloud.io/project/issues?id=luzkalidgm_exaui&types=BUG)" >> $GITHUB_STEP_SUMMARY
+          echo "- [🔐 Vulnerabilidades](https://sonarcloud.io/project/issues?id=luzkalidgm_exaui&types=VULNERABILITY)" >> $GITHUB_STEP_SUMMARY
           
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
@@ -112,7 +112,7 @@ jobs:
               repo: context.repo.repo,
               body: `## 🔍 SonarQube Analysis Complete
               
-              📈 **Ver resultados**: [SonarCloud Dashboard](https://sonarcloud.io/project/overview?id=luzkalidgm_examen-2025-ii-pds-u1-LuzkalidGM)
+              📈 **Ver resultados**: [SonarCloud Dashboard](https://sonarcloud.io/project/overview?id=luzkalidgm_exaui)
               
               ### Objetivos de calidad:
               - 🐛 **Bugs**: 0 (objetivo)
