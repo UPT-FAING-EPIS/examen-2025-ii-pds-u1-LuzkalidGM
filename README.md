@@ -321,6 +321,8 @@ El siguiente diagrama muestra la arquitectura de clases del backend de la aplica
 
 ## 📊 Diagrama de Infraestructura
 
+## 📊 Diagrama de Infraestructura
+
 El siguiente diagrama muestra la arquitectura de la infraestructura desplegada en Azure:
 
 ![Diagrama de Infraestructura](docs/infrastructure_diagram.png)
