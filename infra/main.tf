@@ -35,13 +35,13 @@ provider "azurerm" {
 ## Eliminado random_integer para usar nombres fijos
 
 resource "azurerm_resource_group" "rg" {
-  name     = "upt-arg-988"
+  name     = "upt-arg-991"
   location = "brazilsouth"
 }
 
 
 resource "azurerm_mssql_server" "sqlsrv" {
-  name                         = "upt-dbs-988"
+  name                         = "upt-dbs-991"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = azurerm_resource_group.rg.location
   version                      = "12.0"
