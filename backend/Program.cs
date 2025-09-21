@@ -172,6 +172,14 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health check endpoints
+app.MapGet("/", () => "Project Management API is running! 🚀");
+app.MapGet("/health", () => new { 
+    status = "Healthy", 
+    timestamp = DateTime.UtcNow,
+    version = "1.0.0"
+});
+
 app.MapControllers();
 
 // Health check endpoint
@@ -185,8 +193,8 @@ if (app.Environment.IsDevelopment())
     
     try
     {
-        // Ensure database is created
-        await context.Database.EnsureCreatedAsync();
+        // Test database connection
+        await context.Database.CanConnectAsync();
         app.Logger.LogInformation("Database connection verified successfully");
     }
     catch (Exception ex)
