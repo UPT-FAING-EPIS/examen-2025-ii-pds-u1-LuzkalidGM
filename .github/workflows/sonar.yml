@@ -167,11 +167,18 @@ jobs:
           mkdir -p backend/ProjectManagement.Tests
           cd backend/ProjectManagement.Tests
           
-          # Initialize as separate .NET test project
-          dotnet new xunit --name ProjectManagement.Tests --force
+          # Initialize as separate .NET test project without nested folders
+          dotnet new xunit --force
           
-          # Remove the default test file
-          rm UnitTest1.cs || true
+          # Find and rename the generated project file
+          CSPROJ_FILE=$(find . -name "*.csproj" -type f | head -1)
+          if [ -n "$CSPROJ_FILE" ] && [ "$CSPROJ_FILE" != "./ProjectManagement.Tests.csproj" ]; then
+            echo "Renaming $CSPROJ_FILE to ProjectManagement.Tests.csproj"
+            mv "$CSPROJ_FILE" ProjectManagement.Tests.csproj
+          fi
+          
+          # Remove the default test file if it exists
+          rm -f UnitTest1.cs || true
           
           # Add required packages
           dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 8.0.0
@@ -182,6 +189,8 @@ jobs:
           dotnet add reference ../ProjectManagement.Api.csproj
           
           echo "✅ Test project created successfully"
+          echo "📁 Project structure:"
+          ls -la
 
       - name: Create basic tests
         run: |
