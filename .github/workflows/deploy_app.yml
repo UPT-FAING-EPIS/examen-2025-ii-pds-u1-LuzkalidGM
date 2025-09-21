@@ -162,12 +162,16 @@ jobs:
         with:
           name: backend-app
 
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
 
       - name: Health check
@@ -177,7 +181,7 @@ jobs:
           
           # Try to check if the app is responding
           if curl -f -s "${{ steps.deploy-to-webapp.outputs.webapp-url }}/api/health" > /dev/null; then
-            echo "✅ Backend is responding"
+            echo "✅ Backend is responding successfully"
           else
             echo "⚠️ Backend might be starting up"
           fi
