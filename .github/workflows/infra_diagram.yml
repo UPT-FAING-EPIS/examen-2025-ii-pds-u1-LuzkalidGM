@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'infra/**'
+      - 'backend/**'
       - '.github/workflows/infra_diagram.yml'
   workflow_dispatch:
 

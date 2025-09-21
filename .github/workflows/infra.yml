@@ -6,8 +6,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'infra/**'
-      - '.github/workflows/infra.yml'
+      - 'infra/*.tf'
+      - 'infra/*.tfvars'
   workflow_dispatch:
 
 jobs:
