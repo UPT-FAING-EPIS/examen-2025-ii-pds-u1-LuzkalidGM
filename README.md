@@ -421,3 +421,12 @@ El siguiente diagrama muestra la arquitectura de la infraestructura desplegada e
 4. Las reglas de firewall permiten el acceso controlado a la base de datos
 
 *Diagrama generado automáticamente*
+
+## 🚀 Deployment
+
+### 🌐 Live Application:
+- **API Backend**: [https://projectmanagement-api-988.azurewebsites.net](https://projectmanagement-api-988.azurewebsites.net)
+- **API Documentation**: [Swagger UI](https://projectmanagement-api-988.azurewebsites.net/swagger)
+- **Health Check**: [/api/health](https://projectmanagement-api-988.azurewebsites.net/api/health)
+
+*Actualizado: 21/09/2025*
