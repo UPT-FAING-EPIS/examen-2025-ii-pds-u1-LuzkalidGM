@@ -277,32 +277,6 @@ Este proyecto es parte de una evaluación académica para la Universidad Privada
 *Proyecto desarrollado como parte del examen del segundo periodo académico 2025-II*
 
 ## 🏗️ Diagrama de Clases
-
-El siguiente diagrama muestra la arquitectura de clases del backend de la aplicación:
-
-![Diagrama de Clases](docs/class_diagram.png)
-
-### Arquitectura por Capas:
-
-#### 📁 Models (Modelos de Dominio)
-- User: Gestión de usuarios del sistema
-- Project: Representación de proyectos
-- ProjectTask: Tareas dentro de proyectos
-- TaskComment: Comentarios en tareas
-
-#### 📁 Services (Servicios de Negocio)
-- UserService: Lógica de usuarios y autenticación
-- ProjectService: Lógica de gestión de proyectos
-- TaskService: Lógica de gestión de tareas
-- JwtService: Gestión de tokens de autenticación
-
-#### 📁 Controllers (Controladores API)
-- UsersController: Endpoints de usuarios
-- ProjectsController: Endpoints de proyectos
-- TasksController: Endpoints de tareas
-
-*Diagrama generado automáticamente*
-
 ## 📊 Diagrama de Infraestructura
 ## 📚 Documentación
 
@@ -334,5 +308,32 @@ El siguiente diagrama muestra la arquitectura de la infraestructura desplegada e
 2. El frontend realiza llamadas a la API backend
 3. La API se conecta a SQL Server para operaciones de datos
 4. Las reglas de firewall permiten el acceso controlado a la base de datos
+
+*Diagrama generado automáticamente*
+
+## 🏗️ Diagrama de Clases
+
+El siguiente diagrama muestra la arquitectura de clases del backend de la aplicación:
+
+![Diagrama de Clases](docs/class_diagram.png)
+
+### Arquitectura por Capas:
+
+#### 📁 Models (Modelos de Dominio)
+- User: Gestión de usuarios del sistema
+- Project: Representación de proyectos
+- ProjectTask: Tareas dentro de proyectos
+- TaskComment: Comentarios en tareas
+
+#### 📁 Services (Servicios de Negocio)
+- UserService: Lógica de usuarios y autenticación
+- ProjectService: Lógica de gestión de proyectos
+- TaskService: Lógica de gestión de tareas
+- JwtService: Gestión de tokens de autenticación
+
+#### 📁 Controllers (Controladores API)
+- UsersController: Endpoints de usuarios
+- ProjectsController: Endpoints de proyectos
+- TasksController: Endpoints de tareas
 
 *Diagrama generado automáticamente*
