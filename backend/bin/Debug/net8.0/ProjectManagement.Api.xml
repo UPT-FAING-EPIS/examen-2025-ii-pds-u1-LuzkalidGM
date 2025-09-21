@@ -4,16 +4,110 @@
         <name>ProjectManagement.Api</name>
     </assembly>
     <members>
+        <member name="T:ProjectManagement.Api.Controllers.AuthController">
+            <summary>
+            Controlador de autenticación
+            </summary>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.AuthController.Login(ProjectManagement.Api.Controllers.LoginRequestDto)">
+            <summary>
+            Iniciar sesión
+            </summary>
+            <param name="request">Datos de login</param>
+            <returns>Token JWT</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.AuthController.Register(ProjectManagement.Api.Controllers.RegisterRequestDto)">
+            <summary>
+            Registrar nuevo usuario
+            </summary>
+            <param name="request">Datos de registro</param>
+            <returns>Usuario registrado</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.AuthController.GetCurrentUser">
+            <summary>
+            Obtener información del usuario actual
+            </summary>
+            <returns>Información del usuario</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.AuthController.ChangePassword(ProjectManagement.Api.Controllers.ChangePasswordRequestDto)">
+            <summary>
+            Cambiar contraseña
+            </summary>
+            <param name="request">Datos de cambio de contraseña</param>
+            <returns>Resultado de la operación</returns>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.LoginRequestDto">
+            <summary>
+            DTO para solicitud de login
+            </summary>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.RegisterRequestDto">
+            <summary>
+            DTO para solicitud de registro
+            </summary>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.AuthResponseDto">
+            <summary>
+            DTO para respuesta de autenticación
+            </summary>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.UserInfoDto">
+            <summary>
+            DTO para información de usuario
+            </summary>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.ChangePasswordRequestDto">
+            <summary>
+            DTO para cambio de contraseña
+            </summary>
+        </member>
+        <member name="T:ProjectManagement.Api.Controllers.DashboardController">
+            <summary>
+            Controlador para estadísticas del dashboard
+            </summary>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.DashboardController.#ctor(ProjectManagement.Api.Data.ProjectManagementContext,Microsoft.Extensions.Logging.ILogger{ProjectManagement.Api.Controllers.DashboardController})">
+            <summary>
+            Constructor del controlador de dashboard
+            </summary>
+            <param name="context">Contexto de base de datos</param>
+            <param name="logger">Logger</param>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.DashboardController.GetDashboardStats">
+            <summary>
+            Obtiene estadísticas del dashboard
+            </summary>
+            <returns>Estadísticas del dashboard</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.DashboardController.GetRecentProjects">
+            <summary>
+            Obtiene proyectos recientes
+            </summary>
+            <returns>Lista de proyectos recientes</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.DashboardController.GetRecentTasks">
+            <summary>
+            Obtiene tareas recientes
+            </summary>
+            <returns>Lista de tareas recientes</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.DashboardController.GetCurrentUserId">
+            <summary>
+            Obtiene el ID del usuario actual desde el token JWT
+            </summary>
+            <returns>ID del usuario</returns>
+        </member>
         <member name="T:ProjectManagement.Api.Controllers.ProjectsController">
             <summary>
             Controlador para la gestión de proyectos
             </summary>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.#ctor(ProjectManagement.Api.Services.IProjectService)">
+        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.#ctor(ProjectManagement.Api.Data.ProjectManagementContext,Microsoft.Extensions.Logging.ILogger{ProjectManagement.Api.Controllers.ProjectsController})">
             <summary>
             Constructor del controlador de proyectos
             </summary>
-            <param name="projectService">Servicio de proyectos</param>
+            <param name="context">Contexto de base de datos</param>
+            <param name="logger">Logger</param>
         </member>
         <member name="M:ProjectManagement.Api.Controllers.ProjectsController.GetProjects">
             <summary>
@@ -21,7 +115,7 @@
             </summary>
             <returns>Lista de proyectos</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.GetProject(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.GetProject(System.Guid)">
             <summary>
             Obtiene un proyecto específico por ID
             </summary>
@@ -35,7 +129,7 @@
             <param name="createProjectDto">Datos del proyecto a crear</param>
             <returns>Proyecto creado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.UpdateProject(System.Int32,ProjectManagement.Api.DTOs.UpdateProjectDto)">
+        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.UpdateProject(System.Guid,ProjectManagement.Api.DTOs.UpdateProjectDto)">
             <summary>
             Actualiza un proyecto existente
             </summary>
@@ -43,7 +137,7 @@
             <param name="updateProjectDto">Datos actualizados del proyecto</param>
             <returns>Proyecto actualizado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.DeleteProject(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.DeleteProject(System.Guid)">
             <summary>
             Elimina un proyecto
             </summary>
@@ -55,6 +149,13 @@
             Obtiene proyectos del usuario actual
             </summary>
             <returns>Lista de proyectos del usuario</returns>
+        </member>
+        <member name="M:ProjectManagement.Api.Controllers.ProjectsController.MapToProjectDto(ProjectManagement.Api.Models.Project)">
+            <summary>
+            Mapea una entidad Project a ProjectDto
+            </summary>
+            <param name="project">Entidad Project</param>
+            <returns>ProjectDto</returns>
         </member>
         <member name="M:ProjectManagement.Api.Controllers.ProjectsController.GetCurrentUserId">
             <summary>
@@ -73,14 +174,14 @@
             </summary>
             <param name="taskService">Servicio de tareas</param>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.TasksController.GetTasks(System.Nullable{System.Int32})">
+        <member name="M:ProjectManagement.Api.Controllers.TasksController.GetTasks(System.Nullable{System.Guid})">
             <summary>
             Obtiene tareas filtradas por proyecto
             </summary>
             <param name="projectId">ID del proyecto (opcional)</param>
             <returns>Lista de tareas</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.TasksController.GetTask(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.TasksController.GetTask(System.Guid)">
             <summary>
             Obtiene una tarea específica por ID
             </summary>
@@ -94,7 +195,7 @@
             <param name="createTaskDto">Datos de la tarea a crear</param>
             <returns>Tarea creada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.TasksController.UpdateTask(System.Int32,ProjectManagement.Api.DTOs.UpdateTaskDto)">
+        <member name="M:ProjectManagement.Api.Controllers.TasksController.UpdateTask(System.Guid,ProjectManagement.Api.DTOs.UpdateTaskDto)">
             <summary>
             Actualiza una tarea existente
             </summary>
@@ -102,7 +203,7 @@
             <param name="updateTaskDto">Datos actualizados de la tarea</param>
             <returns>Tarea actualizada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.TasksController.DeleteTask(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.TasksController.DeleteTask(System.Guid)">
             <summary>
             Elimina una tarea
             </summary>
@@ -115,7 +216,7 @@
             </summary>
             <returns>Lista de tareas del usuario</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.TasksController.AddComment(System.Int32,ProjectManagement.Api.DTOs.CreateTaskCommentDto)">
+        <member name="M:ProjectManagement.Api.Controllers.TasksController.AddComment(System.Guid,ProjectManagement.Api.DTOs.CreateTaskCommentDto)">
             <summary>
             Agrega un comentario a una tarea
             </summary>
@@ -161,14 +262,14 @@
             </summary>
             <returns>Lista de usuarios</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.UsersController.GetUser(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.UsersController.GetUser(System.Guid)">
             <summary>
             Obtiene un usuario específico por ID
             </summary>
             <param name="id">ID del usuario</param>
             <returns>Usuario encontrado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.UsersController.UpdateUser(System.Int32,ProjectManagement.Api.DTOs.UpdateUserDto)">
+        <member name="M:ProjectManagement.Api.Controllers.UsersController.UpdateUser(System.Guid,ProjectManagement.Api.DTOs.UpdateUserDto)">
             <summary>
             Actualiza un usuario existente
             </summary>
@@ -183,7 +284,7 @@
             <param name="changePasswordDto">Datos del cambio de contraseña</param>
             <returns>Resultado de la operación</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Controllers.UsersController.DeleteUser(System.Int32)">
+        <member name="M:ProjectManagement.Api.Controllers.UsersController.DeleteUser(System.Guid)">
             <summary>
             Elimina un usuario (solo para administradores)
             </summary>
@@ -239,17 +340,46 @@
             Conjunto de entidades de comentarios de tareas
             </summary>
         </member>
+        <member name="P:ProjectManagement.Api.Data.ProjectManagementContext.ProjectMembers">
+            <summary>
+            Conjunto de entidades de miembros de proyecto
+            </summary>
+        </member>
         <member name="M:ProjectManagement.Api.Data.ProjectManagementContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <summary>
             Configuración del modelo de datos
             </summary>
             <param name="modelBuilder">Constructor del modelo</param>
         </member>
-        <member name="M:ProjectManagement.Api.Data.ProjectManagementContext.SeedData(Microsoft.EntityFrameworkCore.ModelBuilder)">
+        <member name="T:ProjectManagement.Api.DTOs.DashboardStatsDto">
             <summary>
-            Siembra datos iniciales en la base de datos
+            DTO para estadísticas del dashboard
             </summary>
-            <param name="modelBuilder">Constructor del modelo</param>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.DashboardStatsDto.TotalProjects">
+            <summary>
+            Total de proyectos
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.DashboardStatsDto.ActiveProjects">
+            <summary>
+            Proyectos activos
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.DashboardStatsDto.TotalTasks">
+            <summary>
+            Total de tareas
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.DashboardStatsDto.PendingTasks">
+            <summary>
+            Tareas pendientes
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.DashboardStatsDto.CompletedTasks">
+            <summary>
+            Tareas completadas
+            </summary>
         </member>
         <member name="T:ProjectManagement.Api.DTOs.CreateProjectDto">
             <summary>
@@ -274,6 +404,11 @@
         <member name="P:ProjectManagement.Api.DTOs.CreateProjectDto.EndDate">
             <summary>
             Fecha de finalización del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.CreateProjectDto.Priority">
+            <summary>
+            Prioridad del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.CreateProjectDto.ResponsibleId">
@@ -311,6 +446,11 @@
             Estado del proyecto
             </summary>
         </member>
+        <member name="P:ProjectManagement.Api.DTOs.UpdateProjectDto.Priority">
+            <summary>
+            Prioridad del proyecto
+            </summary>
+        </member>
         <member name="P:ProjectManagement.Api.DTOs.UpdateProjectDto.ResponsibleId">
             <summary>
             ID del usuario responsable del proyecto
@@ -318,12 +458,12 @@
         </member>
         <member name="T:ProjectManagement.Api.DTOs.ProjectDto">
             <summary>
-            DTO para la respuesta de un proyecto
+            DTO completo de proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Id">
             <summary>
-            ID del proyecto
+            Identificador único del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Name">
@@ -336,6 +476,16 @@
             Descripción del proyecto
             </summary>
         </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Status">
+            <summary>
+            Estado del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Priority">
+            <summary>
+            Prioridad del proyecto
+            </summary>
+        </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.StartDate">
             <summary>
             Fecha de inicio del proyecto
@@ -346,19 +496,34 @@
             Fecha de finalización del proyecto
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Status">
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.OwnerId">
             <summary>
-            Estado del proyecto
+            ID del propietario del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Owner">
+            <summary>
+            Propietario del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.CreatedBy">
             <summary>
-            Usuario que creó el proyecto
+            Usuario que creó el proyecto (alias para Owner)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Responsible">
             <summary>
-            Usuario responsable del proyecto
+            Usuario responsable del proyecto (alias para Owner)
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Members">
+            <summary>
+            Miembros del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Tasks">
+            <summary>
+            Tareas del proyecto (resumen)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.CreatedAt">
@@ -368,22 +533,52 @@
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectDto.UpdatedAt">
             <summary>
-            Fecha de actualización
+            Fecha de última actualización
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.ProjectDto.Tasks">
+        <member name="T:ProjectManagement.Api.DTOs.ProjectMemberDto">
             <summary>
-            Lista de tareas del proyecto
+            DTO para miembro de proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.Id">
+            <summary>
+            ID del miembro del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.ProjectId">
+            <summary>
+            ID del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.UserId">
+            <summary>
+            ID del usuario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.Role">
+            <summary>
+            Rol en el proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.JoinedDate">
+            <summary>
+            Fecha de unión al proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.ProjectMemberDto.User">
+            <summary>
+            Información del usuario
             </summary>
         </member>
         <member name="T:ProjectManagement.Api.DTOs.ProjectSummaryDto">
             <summary>
-            DTO resumido de proyecto para listas
+            DTO resumido de proyecto para listados
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.Id">
             <summary>
-            ID del proyecto
+            Identificador único del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.Name">
@@ -403,32 +598,32 @@
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.StartDate">
             <summary>
-            Fecha de inicio
+            Fecha de inicio del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.EndDate">
             <summary>
-            Fecha de finalización
+            Fecha de finalización del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.Responsible">
             <summary>
-            Usuario responsable
+            Responsable del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.TotalTasks">
             <summary>
-            Número total de tareas
+            Total de tareas del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.CompletedTasks">
             <summary>
-            Número de tareas completadas
+            Tareas completadas del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.ProjectSummaryDto.ProgressPercentage">
             <summary>
-            Porcentaje de progreso
+            Porcentaje de progreso del proyecto
             </summary>
         </member>
         <member name="T:ProjectManagement.Api.DTOs.CreateTaskCommentDto">
@@ -586,14 +781,14 @@
             Prioridad de la tarea
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.TaskDto.DueDate">
+        <member name="P:ProjectManagement.Api.DTOs.TaskDto.ProjectId">
             <summary>
-            Fecha de vencimiento
+            ID del proyecto
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.TaskDto.Project">
+        <member name="P:ProjectManagement.Api.DTOs.TaskDto.AssignedToId">
             <summary>
-            Proyecto al que pertenece
+            ID del usuario asignado
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.TaskDto.AssignedTo">
@@ -601,9 +796,24 @@
             Usuario asignado
             </summary>
         </member>
+        <member name="P:ProjectManagement.Api.DTOs.TaskDto.Project">
+            <summary>
+            Proyecto al que pertenece la tarea
+            </summary>
+        </member>
         <member name="P:ProjectManagement.Api.DTOs.TaskDto.CreatedBy">
             <summary>
             Usuario que creó la tarea
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.TaskDto.Comments">
+            <summary>
+            Comentarios de la tarea
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.TaskDto.DueDate">
+            <summary>
+            Fecha de vencimiento
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.TaskDto.EstimatedHours">
@@ -626,14 +836,9 @@
             Fecha de actualización
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.TaskDto.Comments">
-            <summary>
-            Comentarios de la tarea
-            </summary>
-        </member>
         <member name="T:ProjectManagement.Api.DTOs.TaskSummaryDto">
             <summary>
-            DTO resumido de tarea
+            DTO de resumen para una tarea (usado en listas de proyectos)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.TaskSummaryDto.Id">
@@ -776,14 +981,24 @@
             ID del usuario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.DTOs.UserDto.Username">
+        <member name="P:ProjectManagement.Api.DTOs.UserDto.FirstName">
             <summary>
-            Nombre de usuario
+            Nombre
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.UserDto.LastName">
+            <summary>
+            Apellido
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.UserDto.Email">
             <summary>
             Correo electrónico
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.DTOs.UserDto.Username">
+            <summary>
+            Nombre de usuario (alias para Email)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.DTOs.UserDto.FullName">
@@ -875,7 +1090,7 @@
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.Id">
             <summary>
-            Identificador único del proyecto
+            Identificador único del proyecto (GUID para Azure SQL)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.Name">
@@ -903,14 +1118,24 @@
             Estado actual del proyecto
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.Project.CreatedById">
+        <member name="P:ProjectManagement.Api.Models.Project.Priority">
             <summary>
-            ID del usuario creador del proyecto
+            Prioridad del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.Project.OwnerId">
+            <summary>
+            ID del usuario propietario del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.ResponsibleId">
             <summary>
-            ID del usuario responsable del proyecto
+            ID del usuario responsable del proyecto (alias para OwnerId)
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.Project.CreatedById">
+            <summary>
+            ID del usuario que creó el proyecto (alias para OwnerId)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.CreatedAt">
@@ -923,19 +1148,29 @@
             Fecha de última actualización
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.Project.CreatedBy">
+        <member name="P:ProjectManagement.Api.Models.Project.Owner">
             <summary>
-            Usuario que creó el proyecto
+            Usuario propietario del proyecto
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.Responsible">
             <summary>
-            Usuario responsable del proyecto
+            Usuario responsable del proyecto (alias para Owner)
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.Project.CreatedBy">
+            <summary>
+            Usuario que creó el proyecto (alias para Owner)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.Project.Tasks">
             <summary>
-            Tareas asociadas al proyecto
+            Tareas del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.Project.Members">
+            <summary>
+            Miembros del proyecto
             </summary>
         </member>
         <member name="T:ProjectManagement.Api.Models.ProjectStatus">
@@ -968,6 +1203,41 @@
             Proyecto cancelado
             </summary>
         </member>
+        <member name="T:ProjectManagement.Api.Models.ProjectMember">
+            <summary>
+            Entidad que representa la membresía de un usuario en un proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.ProjectId">
+            <summary>
+            ID del proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.UserId">
+            <summary>
+            ID del usuario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.Role">
+            <summary>
+            Rol del usuario en el proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.JoinedAt">
+            <summary>
+            Fecha en que se unió al proyecto
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.Project">
+            <summary>
+            Proyecto al que pertenece la membresía
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectMember.User">
+            <summary>
+            Usuario que es miembro del proyecto
+            </summary>
+        </member>
         <member name="T:ProjectManagement.Api.Models.ProjectTask">
             <summary>
             Entidad que representa una tarea dentro de un proyecto
@@ -975,7 +1245,7 @@
         </member>
         <member name="P:ProjectManagement.Api.Models.ProjectTask.Id">
             <summary>
-            Identificador único de la tarea
+            Identificador único de la tarea (GUID para Azure SQL)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.ProjectTask.Title">
@@ -998,9 +1268,29 @@
             Prioridad de la tarea
             </summary>
         </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectTask.StartDate">
+            <summary>
+            Fecha de inicio de la tarea
+            </summary>
+        </member>
         <member name="P:ProjectManagement.Api.Models.ProjectTask.DueDate">
             <summary>
             Fecha de vencimiento de la tarea
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectTask.CompletedAt">
+            <summary>
+            Fecha de finalización de la tarea
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectTask.EstimatedHours">
+            <summary>
+            Horas estimadas para completar la tarea
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.ProjectTask.ActualHours">
+            <summary>
+            Horas reales trabajadas en la tarea
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.ProjectTask.ProjectId">
@@ -1016,16 +1306,6 @@
         <member name="P:ProjectManagement.Api.Models.ProjectTask.CreatedById">
             <summary>
             ID del usuario que creó la tarea
-            </summary>
-        </member>
-        <member name="P:ProjectManagement.Api.Models.ProjectTask.EstimatedHours">
-            <summary>
-            Estimación de horas para completar la tarea
-            </summary>
-        </member>
-        <member name="P:ProjectManagement.Api.Models.ProjectTask.ActualHours">
-            <summary>
-            Horas trabajadas en la tarea
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.ProjectTask.CreatedAt">
@@ -1128,9 +1408,14 @@
             ID de la tarea a la que pertenece el comentario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.TaskComment.CreatedById">
+        <member name="P:ProjectManagement.Api.Models.TaskComment.UserId">
             <summary>
             ID del usuario que creó el comentario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.TaskComment.CreatedById">
+            <summary>
+            ID del usuario que creó el comentario (alias para compatibilidad)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.TaskComment.CreatedAt">
@@ -1148,9 +1433,14 @@
             Tarea a la que pertenece el comentario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.TaskComment.CreatedBy">
+        <member name="P:ProjectManagement.Api.Models.TaskComment.User">
             <summary>
             Usuario que creó el comentario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.TaskComment.CreatedBy">
+            <summary>
+            Usuario que creó el comentario (alias para compatibilidad)
             </summary>
         </member>
         <member name="T:ProjectManagement.Api.Models.User">
@@ -1160,17 +1450,27 @@
         </member>
         <member name="P:ProjectManagement.Api.Models.User.Id">
             <summary>
-            Identificador único del usuario
-            </summary>
-        </member>
-        <member name="P:ProjectManagement.Api.Models.User.Username">
-            <summary>
-            Nombre de usuario único
+            Identificador único del usuario (GUID para Azure SQL)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.User.Email">
             <summary>
-            Correo electrónico del usuario
+            Correo electrónico del usuario (usado como username)
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.Username">
+            <summary>
+            Nombre de usuario (alias para Email)
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.FirstName">
+            <summary>
+            Nombre del usuario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.LastName">
+            <summary>
+            Apellido del usuario
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.User.PasswordHash">
@@ -1178,19 +1478,9 @@
             Hash de la contraseña del usuario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.User.FullName">
-            <summary>
-            Nombre completo del usuario
-            </summary>
-        </member>
         <member name="P:ProjectManagement.Api.Models.User.Role">
             <summary>
-            Rol del usuario en el sistema
-            </summary>
-        </member>
-        <member name="P:ProjectManagement.Api.Models.User.CreatedAt">
-            <summary>
-            Fecha de creación del usuario
+            Rol del usuario en el sistema (Admin, ProjectManager, User)
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.User.IsActive">
@@ -1198,14 +1488,24 @@
             Indica si el usuario está activo
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.User.CreatedProjects">
+        <member name="P:ProjectManagement.Api.Models.User.CreatedAt">
             <summary>
-            Proyectos creados por el usuario
+            Fecha de creación del usuario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.User.AssignedProjects">
+        <member name="P:ProjectManagement.Api.Models.User.UpdatedAt">
             <summary>
-            Proyectos asignados al usuario
+            Fecha de última actualización
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.FullName">
+            <summary>
+            Nombre completo calculado
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.OwnedProjects">
+            <summary>
+            Proyectos donde es propietario
             </summary>
         </member>
         <member name="P:ProjectManagement.Api.Models.User.AssignedTasks">
@@ -1213,9 +1513,19 @@
             Tareas asignadas al usuario
             </summary>
         </member>
-        <member name="P:ProjectManagement.Api.Models.User.Comments">
+        <member name="P:ProjectManagement.Api.Models.User.CreatedTasks">
             <summary>
-            Comentarios creados por el usuario
+            Tareas creadas por el usuario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.TaskComments">
+            <summary>
+            Comentarios del usuario
+            </summary>
+        </member>
+        <member name="P:ProjectManagement.Api.Models.User.ProjectMemberships">
+            <summary>
+            Membresías en proyectos
             </summary>
         </member>
         <member name="T:ProjectManagement.Api.Models.UserRole">
@@ -1293,14 +1603,14 @@
             </summary>
             <returns>Lista de proyectos</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IProjectService.GetProjectByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.IProjectService.GetProjectByIdAsync(System.Guid)">
             <summary>
             Obtiene un proyecto por ID
             </summary>
             <param name="id">ID del proyecto</param>
             <returns>Proyecto encontrado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IProjectService.CreateProjectAsync(ProjectManagement.Api.DTOs.CreateProjectDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.IProjectService.CreateProjectAsync(ProjectManagement.Api.DTOs.CreateProjectDto,System.Guid)">
             <summary>
             Crea un nuevo proyecto
             </summary>
@@ -1308,7 +1618,7 @@
             <param name="createdById">ID del usuario que crea el proyecto</param>
             <returns>Proyecto creado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IProjectService.UpdateProjectAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateProjectDto)">
+        <member name="M:ProjectManagement.Api.Services.IProjectService.UpdateProjectAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateProjectDto)">
             <summary>
             Actualiza un proyecto existente
             </summary>
@@ -1323,7 +1633,7 @@
             <param name="id">ID del proyecto a eliminar</param>
             <returns>True si se eliminó correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IProjectService.GetUserProjectsAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.IProjectService.GetUserProjectsAsync(System.Guid)">
             <summary>
             Obtiene proyectos asignados a un usuario
             </summary>
@@ -1348,14 +1658,14 @@
             </summary>
             <returns>Lista de proyectos</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ProjectService.GetProjectByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ProjectService.GetProjectByIdAsync(System.Guid)">
             <summary>
             Obtiene un proyecto por ID
             </summary>
             <param name="id">ID del proyecto</param>
             <returns>Proyecto encontrado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ProjectService.CreateProjectAsync(ProjectManagement.Api.DTOs.CreateProjectDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ProjectService.CreateProjectAsync(ProjectManagement.Api.DTOs.CreateProjectDto,System.Guid)">
             <summary>
             Crea un nuevo proyecto
             </summary>
@@ -1363,7 +1673,7 @@
             <param name="createdById">ID del usuario que crea el proyecto</param>
             <returns>Proyecto creado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ProjectService.UpdateProjectAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateProjectDto)">
+        <member name="M:ProjectManagement.Api.Services.ProjectService.UpdateProjectAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateProjectDto)">
             <summary>
             Actualiza un proyecto existente
             </summary>
@@ -1378,7 +1688,7 @@
             <param name="id">ID del proyecto a eliminar</param>
             <returns>True si se eliminó correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ProjectService.GetUserProjectsAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ProjectService.GetUserProjectsAsync(System.Guid)">
             <summary>
             Obtiene proyectos asignados a un usuario
             </summary>
@@ -1390,21 +1700,21 @@
             Interfaz para el servicio de tareas
             </summary>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.GetTasksByProjectIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.GetTasksByProjectIdAsync(System.Guid)">
             <summary>
             Obtiene todas las tareas de un proyecto
             </summary>
             <param name="projectId">ID del proyecto</param>
             <returns>Lista de tareas</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.GetTaskByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.GetTaskByIdAsync(System.Guid)">
             <summary>
             Obtiene una tarea por ID
             </summary>
             <param name="id">ID de la tarea</param>
             <returns>Tarea encontrada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.CreateTaskAsync(ProjectManagement.Api.DTOs.CreateTaskDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.CreateTaskAsync(ProjectManagement.Api.DTOs.CreateTaskDto,System.Guid)">
             <summary>
             Crea una nueva tarea
             </summary>
@@ -1412,7 +1722,7 @@
             <param name="createdById">ID del usuario que crea la tarea</param>
             <returns>Tarea creada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.UpdateTaskAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateTaskDto)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.UpdateTaskAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateTaskDto)">
             <summary>
             Actualiza una tarea existente
             </summary>
@@ -1420,21 +1730,21 @@
             <param name="updateTaskDto">Datos actualizados de la tarea</param>
             <returns>Tarea actualizada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.DeleteTaskAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.DeleteTaskAsync(System.Guid)">
             <summary>
             Elimina una tarea
             </summary>
             <param name="id">ID de la tarea a eliminar</param>
             <returns>True si se eliminó correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.GetUserTasksAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.GetUserTasksAsync(System.Guid)">
             <summary>
             Obtiene tareas asignadas a un usuario
             </summary>
             <param name="userId">ID del usuario</param>
             <returns>Lista de tareas del usuario</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.ITaskService.AddCommentAsync(System.Int32,ProjectManagement.Api.DTOs.CreateTaskCommentDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.ITaskService.AddCommentAsync(System.Guid,ProjectManagement.Api.DTOs.CreateTaskCommentDto,System.Guid)">
             <summary>
             Agrega un comentario a una tarea
             </summary>
@@ -1455,21 +1765,21 @@
             <param name="context">Contexto de base de datos</param>
             <param name="mapper">Mapeador de objetos</param>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.GetTasksByProjectIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.GetTasksByProjectIdAsync(System.Guid)">
             <summary>
             Obtiene todas las tareas de un proyecto
             </summary>
             <param name="projectId">ID del proyecto</param>
             <returns>Lista de tareas</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.GetTaskByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.GetTaskByIdAsync(System.Guid)">
             <summary>
             Obtiene una tarea por ID
             </summary>
             <param name="id">ID de la tarea</param>
             <returns>Tarea encontrada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.CreateTaskAsync(ProjectManagement.Api.DTOs.CreateTaskDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.CreateTaskAsync(ProjectManagement.Api.DTOs.CreateTaskDto,System.Guid)">
             <summary>
             Crea una nueva tarea
             </summary>
@@ -1477,7 +1787,7 @@
             <param name="createdById">ID del usuario que crea la tarea</param>
             <returns>Tarea creada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.UpdateTaskAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateTaskDto)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.UpdateTaskAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateTaskDto)">
             <summary>
             Actualiza una tarea existente
             </summary>
@@ -1485,21 +1795,21 @@
             <param name="updateTaskDto">Datos actualizados de la tarea</param>
             <returns>Tarea actualizada</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.DeleteTaskAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.DeleteTaskAsync(System.Guid)">
             <summary>
             Elimina una tarea
             </summary>
             <param name="id">ID de la tarea a eliminar</param>
             <returns>True si se eliminó correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.GetUserTasksAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.GetUserTasksAsync(System.Guid)">
             <summary>
             Obtiene tareas asignadas a un usuario
             </summary>
             <param name="userId">ID del usuario</param>
             <returns>Lista de tareas del usuario</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.TaskService.AddCommentAsync(System.Int32,ProjectManagement.Api.DTOs.CreateTaskCommentDto,System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.TaskService.AddCommentAsync(System.Guid,ProjectManagement.Api.DTOs.CreateTaskCommentDto,System.Guid)">
             <summary>
             Agrega un comentario a una tarea
             </summary>
@@ -1540,14 +1850,14 @@
             </summary>
             <returns>Lista de usuarios</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IUserService.GetUserByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.IUserService.GetUserByIdAsync(System.Guid)">
             <summary>
             Obtiene un usuario por ID
             </summary>
             <param name="id">ID del usuario</param>
             <returns>Usuario encontrado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IUserService.UpdateUserAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateUserDto)">
+        <member name="M:ProjectManagement.Api.Services.IUserService.UpdateUserAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateUserDto)">
             <summary>
             Actualiza un usuario existente
             </summary>
@@ -1555,7 +1865,7 @@
             <param name="updateUserDto">Datos actualizados del usuario</param>
             <returns>Usuario actualizado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IUserService.ChangePasswordAsync(System.Int32,ProjectManagement.Api.DTOs.ChangePasswordDto)">
+        <member name="M:ProjectManagement.Api.Services.IUserService.ChangePasswordAsync(System.Guid,ProjectManagement.Api.DTOs.ChangePasswordDto)">
             <summary>
             Cambia la contraseña de un usuario
             </summary>
@@ -1563,7 +1873,7 @@
             <param name="changePasswordDto">Datos del cambio de contraseña</param>
             <returns>True si se cambió correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.IUserService.DeleteUserAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.IUserService.DeleteUserAsync(System.Guid)">
             <summary>
             Elimina un usuario
             </summary>
@@ -1608,14 +1918,14 @@
             </summary>
             <returns>Lista de usuarios</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.UserService.GetUserByIdAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.UserService.GetUserByIdAsync(System.Guid)">
             <summary>
             Obtiene un usuario por ID
             </summary>
             <param name="id">ID del usuario</param>
             <returns>Usuario encontrado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.UserService.UpdateUserAsync(System.Int32,ProjectManagement.Api.DTOs.UpdateUserDto)">
+        <member name="M:ProjectManagement.Api.Services.UserService.UpdateUserAsync(System.Guid,ProjectManagement.Api.DTOs.UpdateUserDto)">
             <summary>
             Actualiza un usuario existente
             </summary>
@@ -1623,7 +1933,7 @@
             <param name="updateUserDto">Datos actualizados del usuario</param>
             <returns>Usuario actualizado</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.UserService.ChangePasswordAsync(System.Int32,ProjectManagement.Api.DTOs.ChangePasswordDto)">
+        <member name="M:ProjectManagement.Api.Services.UserService.ChangePasswordAsync(System.Guid,ProjectManagement.Api.DTOs.ChangePasswordDto)">
             <summary>
             Cambia la contraseña de un usuario
             </summary>
@@ -1631,7 +1941,7 @@
             <param name="changePasswordDto">Datos del cambio de contraseña</param>
             <returns>True si se cambió correctamente</returns>
         </member>
-        <member name="M:ProjectManagement.Api.Services.UserService.DeleteUserAsync(System.Int32)">
+        <member name="M:ProjectManagement.Api.Services.UserService.DeleteUserAsync(System.Guid)">
             <summary>
             Elimina un usuario
             </summary>

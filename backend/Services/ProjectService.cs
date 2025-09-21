@@ -22,7 +22,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID del proyecto</param>
         /// <returns>Proyecto encontrado</returns>
-        Task<ProjectDto?> GetProjectByIdAsync(int id);
+        Task<ProjectDto?> GetProjectByIdAsync(Guid id);
 
         /// <summary>
         /// Crea un nuevo proyecto
@@ -30,7 +30,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createProjectDto">Datos del proyecto a crear</param>
         /// <param name="createdById">ID del usuario que crea el proyecto</param>
         /// <returns>Proyecto creado</returns>
-        Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto, int createdById);
+        Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto, Guid createdById);
 
         /// <summary>
         /// Actualiza un proyecto existente
@@ -38,7 +38,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID del proyecto</param>
         /// <param name="updateProjectDto">Datos actualizados del proyecto</param>
         /// <returns>Proyecto actualizado</returns>
-        Task<ProjectDto?> UpdateProjectAsync(int id, UpdateProjectDto updateProjectDto);
+        Task<ProjectDto?> UpdateProjectAsync(Guid id, UpdateProjectDto updateProjectDto);
 
         /// <summary>
         /// Elimina un proyecto
@@ -52,7 +52,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="userId">ID del usuario</param>
         /// <returns>Lista de proyectos del usuario</returns>
-        Task<IEnumerable<ProjectSummaryDto>> GetUserProjectsAsync(int userId);
+        Task<IEnumerable<ProjectSummaryDto>> GetUserProjectsAsync(Guid userId);
     }
 
     /// <summary>
@@ -95,11 +95,11 @@ namespace ProjectManagement.Api.Services
                 Status = p.Status,
                 StartDate = p.StartDate,
                 EndDate = p.EndDate,
-                Responsible = _mapper.Map<UserSummaryDto>(p.Responsible),
+                Responsible = p.Responsible?.FullName ?? "Sin asignar",
                 TotalTasks = p.Tasks.Count,
-                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed),
+                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString()),
                 ProgressPercentage = p.Tasks.Count > 0 ? 
-                    (decimal)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed) / p.Tasks.Count * 100 : 0
+                    (double)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString()) / p.Tasks.Count * 100 : 0
             });
         }
 
@@ -108,7 +108,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID del proyecto</param>
         /// <returns>Proyecto encontrado</returns>
-        public async Task<ProjectDto?> GetProjectByIdAsync(int id)
+        public async Task<ProjectDto?> GetProjectByIdAsync(Guid id)
         {
             var project = await _context.Projects
                 .Include(p => p.CreatedBy)
@@ -151,7 +151,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createProjectDto">Datos del proyecto a crear</param>
         /// <param name="createdById">ID del usuario que crea el proyecto</param>
         /// <returns>Proyecto creado</returns>
-        public async Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto, int createdById)
+        public async Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto, Guid createdById)
         {
             var project = new Project
             {
@@ -159,9 +159,8 @@ namespace ProjectManagement.Api.Services
                 Description = createProjectDto.Description,
                 StartDate = createProjectDto.StartDate,
                 EndDate = createProjectDto.EndDate,
-                ResponsibleId = createProjectDto.ResponsibleId,
-                CreatedById = createdById,
-                Status = ProjectStatus.Planning,
+                OwnerId = createProjectDto.ResponsibleId ?? createdById,
+                Status = ProjectStatus.Planning.ToString(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -199,7 +198,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID del proyecto</param>
         /// <param name="updateProjectDto">Datos actualizados del proyecto</param>
         /// <returns>Proyecto actualizado</returns>
-        public async Task<ProjectDto?> UpdateProjectAsync(int id, UpdateProjectDto updateProjectDto)
+        public async Task<ProjectDto?> UpdateProjectAsync(Guid id, UpdateProjectDto updateProjectDto)
         {
             var project = await _context.Projects
                 .Include(p => p.CreatedBy)
@@ -208,12 +207,12 @@ namespace ProjectManagement.Api.Services
 
             if (project == null) return null;
 
-            project.Name = updateProjectDto.Name;
-            project.Description = updateProjectDto.Description;
-            project.StartDate = updateProjectDto.StartDate;
+            project.Name = updateProjectDto.Name ?? project.Name;
+            project.Description = updateProjectDto.Description ?? project.Description;
+            project.StartDate = updateProjectDto.StartDate ?? project.StartDate;
             project.EndDate = updateProjectDto.EndDate;
-            project.Status = updateProjectDto.Status;
-            project.ResponsibleId = updateProjectDto.ResponsibleId;
+            project.Status = updateProjectDto.Status ?? project.Status;
+            project.OwnerId = updateProjectDto.ResponsibleId ?? project.OwnerId;
             project.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -262,7 +261,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="userId">ID del usuario</param>
         /// <returns>Lista de proyectos del usuario</returns>
-        public async Task<IEnumerable<ProjectSummaryDto>> GetUserProjectsAsync(int userId)
+        public async Task<IEnumerable<ProjectSummaryDto>> GetUserProjectsAsync(Guid userId)
         {
             var projects = await _context.Projects
                 .Include(p => p.CreatedBy)
@@ -281,11 +280,11 @@ namespace ProjectManagement.Api.Services
                 Status = p.Status,
                 StartDate = p.StartDate,
                 EndDate = p.EndDate,
-                Responsible = _mapper.Map<UserSummaryDto>(p.Responsible),
+                Responsible = p.Responsible?.FullName ?? "Sin asignar",
                 TotalTasks = p.Tasks.Count,
-                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed),
+                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString()),
                 ProgressPercentage = p.Tasks.Count > 0 ? 
-                    (decimal)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed) / p.Tasks.Count * 100 : 0
+                    (double)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString()) / p.Tasks.Count * 100 : 0
             });
         }
     }

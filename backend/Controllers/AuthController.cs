@@ -70,7 +70,7 @@ namespace ProjectManagement.Api.Controllers
                         Email = user.Email,
                         FirstName = user.FirstName,
                         LastName = user.LastName,
-                        Role = user.Role
+                        Role = user.Role.ToString()
                     }
                 });
             }
@@ -104,7 +104,7 @@ namespace ProjectManagement.Api.Controllers
                     FirstName = request.FirstName,
                     LastName = request.LastName,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                    Role = "User", // Por defecto es User
+                    Role = UserRole.TeamMember, // Por defecto es TeamMember
                     IsActive = true
                 };
 
@@ -123,7 +123,7 @@ namespace ProjectManagement.Api.Controllers
                         Email = user.Email,
                         FirstName = user.FirstName,
                         LastName = user.LastName,
-                        Role = user.Role
+                        Role = user.Role.ToString()
                     }
                 });
             }
@@ -158,7 +158,7 @@ namespace ProjectManagement.Api.Controllers
                     Email = user.Email,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    Role = user.Role
+                    Role = user.Role.ToString()
                 });
             }
             catch (Exception ex)
@@ -220,7 +220,7 @@ namespace ProjectManagement.Api.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             };
 
             var token = new JwtSecurityToken(

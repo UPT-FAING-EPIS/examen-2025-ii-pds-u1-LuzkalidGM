@@ -25,18 +25,18 @@ namespace ProjectManagement.Api.DTOs
         /// ID del proyecto al que pertenece la tarea
         /// </summary>
         [Required]
-        public int ProjectId { get; set; }
+        public Guid ProjectId { get; set; }
 
         /// <summary>
         /// ID del usuario asignado a la tarea
         /// </summary>
-        public int? AssignedToId { get; set; }
+        public Guid? AssignedToId { get; set; }
 
         /// <summary>
         /// Prioridad de la tarea
         /// </summary>
         [Required]
-        public TaskPriority Priority { get; set; }
+        public string Priority { get; set; } = "Medium";
 
         /// <summary>
         /// Fecha de vencimiento
@@ -58,32 +58,29 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Título de la tarea
         /// </summary>
-        [Required]
         [StringLength(200, MinimumLength = 3)]
-        public string Title { get; set; } = string.Empty;
+        public string? Title { get; set; }
 
         /// <summary>
         /// Descripción de la tarea
         /// </summary>
         [StringLength(1000)]
-        public string Description { get; set; } = string.Empty;
+        public string? Description { get; set; }
 
         /// <summary>
         /// Estado de la tarea
         /// </summary>
-        [Required]
-        public Models.TaskStatus Status { get; set; }
+        public string? Status { get; set; }
 
         /// <summary>
         /// Prioridad de la tarea
         /// </summary>
-        [Required]
-        public TaskPriority Priority { get; set; }
+        public string? Priority { get; set; }
 
         /// <summary>
         /// ID del usuario asignado a la tarea
         /// </summary>
-        public int? AssignedToId { get; set; }
+        public Guid? AssignedToId { get; set; }
 
         /// <summary>
         /// Fecha de vencimiento
@@ -100,7 +97,7 @@ namespace ProjectManagement.Api.DTOs
         /// Horas trabajadas
         /// </summary>
         [Range(0, 999.99)]
-        public decimal ActualHours { get; set; }
+        public decimal? ActualHours { get; set; }
     }
 
     /// <summary>
@@ -111,7 +108,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// ID de la tarea
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Título de la tarea
@@ -126,32 +123,47 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Estado de la tarea
         /// </summary>
-        public Models.TaskStatus Status { get; set; }
+        public string Status { get; set; } = string.Empty;
 
         /// <summary>
         /// Prioridad de la tarea
         /// </summary>
-        public TaskPriority Priority { get; set; }
+        public string Priority { get; set; } = string.Empty;
+
+        /// <summary>
+        /// ID del proyecto
+        /// </summary>
+        public Guid ProjectId { get; set; }
+
+        /// <summary>
+        /// ID del usuario asignado
+        /// </summary>
+        public Guid? AssignedToId { get; set; }
+
+        /// <summary>
+        /// Usuario asignado
+        /// </summary>
+        public UserDto? AssignedTo { get; set; }
+
+        /// <summary>
+        /// Proyecto al que pertenece la tarea
+        /// </summary>
+        public ProjectSummaryDto? Project { get; set; }
+
+        /// <summary>
+        /// Usuario que creó la tarea
+        /// </summary>
+        public UserSummaryDto? CreatedBy { get; set; }
+
+        /// <summary>
+        /// Comentarios de la tarea
+        /// </summary>
+        public List<TaskCommentDto>? Comments { get; set; }
 
         /// <summary>
         /// Fecha de vencimiento
         /// </summary>
         public DateTime? DueDate { get; set; }
-
-        /// <summary>
-        /// Proyecto al que pertenece
-        /// </summary>
-        public ProjectSummaryDto Project { get; set; } = null!;
-
-        /// <summary>
-        /// Usuario asignado
-        /// </summary>
-        public UserSummaryDto? AssignedTo { get; set; }
-
-        /// <summary>
-        /// Usuario que creó la tarea
-        /// </summary>
-        public UserSummaryDto CreatedBy { get; set; } = null!;
 
         /// <summary>
         /// Estimación de horas
@@ -161,7 +173,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Horas trabajadas
         /// </summary>
-        public decimal ActualHours { get; set; }
+        public decimal? ActualHours { get; set; }
 
         /// <summary>
         /// Fecha de creación
@@ -172,22 +184,17 @@ namespace ProjectManagement.Api.DTOs
         /// Fecha de actualización
         /// </summary>
         public DateTime UpdatedAt { get; set; }
-
-        /// <summary>
-        /// Comentarios de la tarea
-        /// </summary>
-        public List<TaskCommentDto> Comments { get; set; } = new List<TaskCommentDto>();
     }
 
     /// <summary>
-    /// DTO resumido de tarea
+    /// DTO de resumen para una tarea (usado en listas de proyectos)
     /// </summary>
     public class TaskSummaryDto
     {
         /// <summary>
         /// ID de la tarea
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Título de la tarea
@@ -197,12 +204,12 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Estado de la tarea
         /// </summary>
-        public Models.TaskStatus Status { get; set; }
+        public string Status { get; set; } = string.Empty;
 
         /// <summary>
         /// Prioridad de la tarea
         /// </summary>
-        public TaskPriority Priority { get; set; }
+        public string Priority { get; set; } = string.Empty;
 
         /// <summary>
         /// Fecha de vencimiento
@@ -222,6 +229,6 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Horas trabajadas
         /// </summary>
-        public decimal ActualHours { get; set; }
+        public decimal? ActualHours { get; set; }
     }
 }

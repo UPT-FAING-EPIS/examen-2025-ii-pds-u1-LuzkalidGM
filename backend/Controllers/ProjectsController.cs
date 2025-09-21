@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ProjectManagement.Api.Data;
+using ProjectManagement.Api.Models;
 using ProjectManagement.Api.DTOs;
-using ProjectManagement.Api.Services;
 using System.Security.Claims;
 
 namespace ProjectManagement.Api.Controllers
@@ -14,15 +16,18 @@ namespace ProjectManagement.Api.Controllers
     [Authorize]
     public class ProjectsController : ControllerBase
     {
-        private readonly IProjectService _projectService;
+        private readonly ProjectManagementContext _context;
+        private readonly ILogger<ProjectsController> _logger;
 
         /// <summary>
         /// Constructor del controlador de proyectos
         /// </summary>
-        /// <param name="projectService">Servicio de proyectos</param>
-        public ProjectsController(IProjectService projectService)
+        /// <param name="context">Contexto de base de datos</param>
+        /// <param name="logger">Logger</param>
+        public ProjectsController(ProjectManagementContext context, ILogger<ProjectsController> logger)
         {
-            _projectService = projectService;
+            _context = context;
+            _logger = logger;
         }
 
         /// <summary>
@@ -30,11 +35,27 @@ namespace ProjectManagement.Api.Controllers
         /// </summary>
         /// <returns>Lista de proyectos</returns>
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<ProjectSummaryDto>), 200)]
-        public async Task<ActionResult<IEnumerable<ProjectSummaryDto>>> GetProjects()
+        [ProducesResponseType(typeof(IEnumerable<ProjectDto>), 200)]
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
         {
-            var projects = await _projectService.GetAllProjectsAsync();
-            return Ok(projects);
+            try
+            {
+                var projects = await _context.Projects
+                    .Include(p => p.Owner)
+                    .Include(p => p.Members)
+                        .ThenInclude(m => m.User)
+                    .Include(p => p.Tasks)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                var projectDtos = projects.Select(MapToProjectDto).ToList();
+                return Ok(projectDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving projects");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -45,16 +66,29 @@ namespace ProjectManagement.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ProjectDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<ProjectDto>> GetProject(int id)
+        public async Task<ActionResult<ProjectDto>> GetProject(Guid id)
         {
-            var project = await _projectService.GetProjectByIdAsync(id);
-            
-            if (project == null)
+            try
             {
-                return NotFound($"Proyecto con ID {id} no encontrado.");
-            }
+                var project = await _context.Projects
+                    .Include(p => p.Owner)
+                    .Include(p => p.Members)
+                        .ThenInclude(m => m.User)
+                    .Include(p => p.Tasks)
+                    .FirstOrDefaultAsync(p => p.Id == id);
 
-            return Ok(project);
+                if (project == null)
+                {
+                    return NotFound($"Proyecto con ID {id} no encontrado.");
+                }
+
+                return Ok(MapToProjectDto(project));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving project {ProjectId}", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -67,15 +101,47 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(400)]
         public async Task<ActionResult<ProjectDto>> CreateProject([FromBody] CreateProjectDto createProjectDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var userId = GetCurrentUserId();
+                
+                var project = new Project
+                {
+                    Id = Guid.NewGuid(),
+                    Name = createProjectDto.Name,
+                    Description = createProjectDto.Description,
+                    StartDate = createProjectDto.StartDate,
+                    EndDate = createProjectDto.EndDate,
+                    Priority = createProjectDto.Priority,
+                    Status = "Planning",
+                    OwnerId = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Projects.Add(project);
+                await _context.SaveChangesAsync();
+
+                // Reload with includes
+                var createdProject = await _context.Projects
+                    .Include(p => p.Owner)
+                    .Include(p => p.Members)
+                        .ThenInclude(m => m.User)
+                    .Include(p => p.Tasks)
+                    .FirstOrDefaultAsync(p => p.Id == project.Id);
+
+                return CreatedAtAction(nameof(GetProject), new { id = project.Id }, MapToProjectDto(createdProject!));
             }
-
-            var userId = GetCurrentUserId();
-            var project = await _projectService.CreateProjectAsync(createProjectDto, userId);
-
-            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating project");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -88,21 +154,56 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(typeof(ProjectDto), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<ProjectDto>> UpdateProject(int id, [FromBody] UpdateProjectDto updateProjectDto)
+        public async Task<ActionResult<ProjectDto>> UpdateProject(Guid id, [FromBody] UpdateProjectDto updateProjectDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
 
-            var project = await _projectService.UpdateProjectAsync(id, updateProjectDto);
-            
-            if (project == null)
+                var project = await _context.Projects
+                    .Include(p => p.Owner)
+                    .Include(p => p.Members)
+                        .ThenInclude(m => m.User)
+                    .Include(p => p.Tasks)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (project == null)
+                {
+                    return NotFound($"Proyecto con ID {id} no encontrado.");
+                }
+
+                // Update properties
+                if (!string.IsNullOrEmpty(updateProjectDto.Name))
+                    project.Name = updateProjectDto.Name;
+                
+                if (!string.IsNullOrEmpty(updateProjectDto.Description))
+                    project.Description = updateProjectDto.Description;
+                
+                if (updateProjectDto.StartDate.HasValue)
+                    project.StartDate = updateProjectDto.StartDate.Value;
+                
+                if (updateProjectDto.EndDate.HasValue)
+                    project.EndDate = updateProjectDto.EndDate.Value;
+                
+                if (!string.IsNullOrEmpty(updateProjectDto.Priority))
+                    project.Priority = updateProjectDto.Priority;
+                
+                if (!string.IsNullOrEmpty(updateProjectDto.Status))
+                    project.Status = updateProjectDto.Status;
+
+                project.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return Ok(MapToProjectDto(project));
+            }
+            catch (Exception ex)
             {
-                return NotFound($"Proyecto con ID {id} no encontrado.");
+                _logger.LogError(ex, "Error updating project {ProjectId}", id);
+                return StatusCode(500, "Internal server error");
             }
-
-            return Ok(project);
         }
 
         /// <summary>
@@ -114,16 +215,32 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         [Authorize(Roles = "Admin,ProjectManager")]
-        public async Task<IActionResult> DeleteProject(int id)
+        public async Task<IActionResult> DeleteProject(Guid id)
         {
-            var result = await _projectService.DeleteProjectAsync(id);
-            
-            if (!result)
+            try
             {
-                return NotFound($"Proyecto con ID {id} no encontrado.");
-            }
+                var project = await _context.Projects
+                    .Include(p => p.Tasks)
+                    .Include(p => p.Members)
+                    .FirstOrDefaultAsync(p => p.Id == id);
 
-            return NoContent();
+                if (project == null)
+                {
+                    return NotFound($"Proyecto con ID {id} no encontrado.");
+                }
+
+                _context.Tasks.RemoveRange(project.Tasks);
+                _context.ProjectMembers.RemoveRange(project.Members);
+                _context.Projects.Remove(project);
+                
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting project {ProjectId}", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -131,23 +248,101 @@ namespace ProjectManagement.Api.Controllers
         /// </summary>
         /// <returns>Lista de proyectos del usuario</returns>
         [HttpGet("my-projects")]
-        [ProducesResponseType(typeof(IEnumerable<ProjectSummaryDto>), 200)]
-        public async Task<ActionResult<IEnumerable<ProjectSummaryDto>>> GetMyProjects()
+        [ProducesResponseType(typeof(IEnumerable<ProjectDto>), 200)]
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetMyProjects()
         {
-            var userId = GetCurrentUserId();
-            var projects = await _projectService.GetUserProjectsAsync(userId);
-            return Ok(projects);
+            try
+            {
+                var userId = GetCurrentUserId();
+                var projects = await _context.Projects
+                    .Include(p => p.Owner)
+                    .Include(p => p.Members)
+                        .ThenInclude(m => m.User)
+                    .Include(p => p.Tasks)
+                    .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId))
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                var projectDtos = projects.Select(MapToProjectDto).ToList();
+                return Ok(projectDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user projects");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Mapea una entidad Project a ProjectDto
+        /// </summary>
+        /// <param name="project">Entidad Project</param>
+        /// <returns>ProjectDto</returns>
+        private ProjectDto MapToProjectDto(Project project)
+        {
+            return new ProjectDto
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                Status = project.Status,
+                Priority = project.Priority,
+                StartDate = project.StartDate,
+                EndDate = project.EndDate,
+                OwnerId = project.OwnerId,
+                Owner = project.Owner != null ? new UserDto
+                {
+                    Id = project.Owner.Id,
+                    FirstName = project.Owner.FirstName,
+                    LastName = project.Owner.LastName,
+                    Email = project.Owner.Email
+                } : null,
+                Members = project.Members?.Select(m => new ProjectMemberDto
+                {
+                    Id = m.UserId, // Use UserId as the member ID for simplicity
+                    ProjectId = m.ProjectId,
+                    UserId = m.UserId,
+                    Role = m.Role,
+                    JoinedDate = m.JoinedAt, // Map JoinedAt to JoinedDate
+                    User = m.User != null ? new UserDto
+                    {
+                        Id = m.User.Id,
+                        FirstName = m.User.FirstName,
+                        LastName = m.User.LastName,
+                        Email = m.User.Email
+                    } : null
+                }).ToList(),
+                Tasks = project.Tasks?.Select(t => new TaskSummaryDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status,
+                    Priority = t.Priority,
+                    DueDate = t.DueDate,
+                    EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
+                    AssignedTo = t.AssignedTo != null ? new UserSummaryDto
+                    {
+                        Id = t.AssignedTo.Id,
+                        Username = t.AssignedTo.Email,
+                        FullName = $"{t.AssignedTo.FirstName} {t.AssignedTo.LastName}",
+                        Role = t.AssignedTo.Role
+                    } : null
+                }).ToList(),
+                CreatedAt = project.CreatedAt,
+                UpdatedAt = project.UpdatedAt
+            };
         }
 
         /// <summary>
         /// Obtiene el ID del usuario actual desde el token JWT
         /// </summary>
         /// <returns>ID del usuario</returns>
-        private int GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
             {
                 throw new UnauthorizedAccessException("Token de usuario inválido.");
             }

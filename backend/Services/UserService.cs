@@ -36,7 +36,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID del usuario</param>
         /// <returns>Usuario encontrado</returns>
-        Task<UserDto?> GetUserByIdAsync(int id);
+        Task<UserDto?> GetUserByIdAsync(Guid id);
 
         /// <summary>
         /// Actualiza un usuario existente
@@ -44,7 +44,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID del usuario</param>
         /// <param name="updateUserDto">Datos actualizados del usuario</param>
         /// <returns>Usuario actualizado</returns>
-        Task<UserDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto);
+        Task<UserDto?> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
 
         /// <summary>
         /// Cambia la contraseña de un usuario
@@ -52,14 +52,14 @@ namespace ProjectManagement.Api.Services
         /// <param name="userId">ID del usuario</param>
         /// <param name="changePasswordDto">Datos del cambio de contraseña</param>
         /// <returns>True si se cambió correctamente</returns>
-        Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
+        Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto);
 
         /// <summary>
         /// Elimina un usuario
         /// </summary>
         /// <param name="id">ID del usuario a eliminar</param>
         /// <returns>True si se eliminó correctamente</returns>
-        Task<bool> DeleteUserAsync(int id);
+        Task<bool> DeleteUserAsync(Guid id);
 
         /// <summary>
         /// Obtiene usuarios activos para asignación
@@ -123,12 +123,17 @@ namespace ProjectManagement.Api.Services
                 throw new InvalidOperationException("El nombre de usuario o email ya está en uso.");
             }
 
+            // Parsear el nombre completo en firstName y lastName
+            var nameParts = registerUserDto.FullName.Split(' ', 2);
+            var firstName = nameParts.Length > 0 ? nameParts[0] : "";
+            var lastName = nameParts.Length > 1 ? nameParts[1] : "";
+
             var user = new User
             {
-                Username = registerUserDto.Username,
                 Email = registerUserDto.Email,
+                FirstName = firstName,
+                LastName = lastName,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
-                FullName = registerUserDto.FullName,
                 Role = registerUserDto.Role,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
@@ -158,7 +163,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID del usuario</param>
         /// <returns>Usuario encontrado</returns>
-        public async Task<UserDto?> GetUserByIdAsync(int id)
+        public async Task<UserDto?> GetUserByIdAsync(Guid id)
         {
             var user = await _context.Users.FindAsync(id);
             return user != null ? _mapper.Map<UserDto>(user) : null;
@@ -170,7 +175,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID del usuario</param>
         /// <param name="updateUserDto">Datos actualizados del usuario</param>
         /// <returns>Usuario actualizado</returns>
-        public async Task<UserDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto)
+        public async Task<UserDto?> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return null;
@@ -184,8 +189,14 @@ namespace ProjectManagement.Api.Services
                 throw new InvalidOperationException("El email ya está en uso por otro usuario.");
             }
 
+            // Parsear el nombre completo en firstName y lastName
+            var nameParts = updateUserDto.FullName.Split(' ', 2);
+            var firstName = nameParts.Length > 0 ? nameParts[0] : "";
+            var lastName = nameParts.Length > 1 ? nameParts[1] : "";
+
             user.Email = updateUserDto.Email;
-            user.FullName = updateUserDto.FullName;
+            user.FirstName = firstName;
+            user.LastName = lastName;
             user.Role = updateUserDto.Role;
             user.IsActive = updateUserDto.IsActive;
 
@@ -200,7 +211,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="userId">ID del usuario</param>
         /// <param name="changePasswordDto">Datos del cambio de contraseña</param>
         /// <returns>True si se cambió correctamente</returns>
-        public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
+        public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return false;
@@ -221,7 +232,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID del usuario a eliminar</param>
         /// <returns>True si se eliminó correctamente</returns>
-        public async Task<bool> DeleteUserAsync(int id)
+        public async Task<bool> DeleteUserAsync(Guid id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;

@@ -81,17 +81,14 @@ namespace ProjectManagement.Api.Controllers
             var response = new AuthResponseDto
             {
                 Token = token,
-                User = new UserDto
+                User = new UserInfoDto
                 {
                     Id = user.Id,
-                    Username = user.Username,
                     Email = user.Email,
-                    FullName = user.FullName,
-                    Role = user.Role,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt
-                },
-                ExpiresAt = expiresAt
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Role = user.Role.ToString()
+                }
             };
 
             return Ok(response);
@@ -119,7 +116,7 @@ namespace ProjectManagement.Api.Controllers
         [Authorize]
         [ProducesResponseType(typeof(UserDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<UserDto>> GetUser(int id)
+        public async Task<ActionResult<UserDto>> GetUser(Guid id)
         {
             // Los usuarios solo pueden ver su propio perfil, excepto administradores
             var currentUserId = GetCurrentUserId();
@@ -151,7 +148,7 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(typeof(UserDto), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] UpdateUserDto updateUserDto)
+        public async Task<ActionResult<UserDto>> UpdateUser(Guid id, [FromBody] UpdateUserDto updateUserDto)
         {
             if (!ModelState.IsValid)
             {
@@ -220,7 +217,7 @@ namespace ProjectManagement.Api.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
             var result = await _userService.DeleteUserAsync(id);
             
@@ -269,11 +266,11 @@ namespace ProjectManagement.Api.Controllers
         /// Obtiene el ID del usuario actual desde el token JWT
         /// </summary>
         /// <returns>ID del usuario</returns>
-        private int GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
             {
                 throw new UnauthorizedAccessException("Token de usuario inválido.");
             }

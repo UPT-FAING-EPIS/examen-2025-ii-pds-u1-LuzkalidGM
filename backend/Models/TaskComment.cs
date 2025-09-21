@@ -34,9 +34,24 @@ namespace ProjectManagement.Api.Models
         public Guid UserId { get; set; }
 
         /// <summary>
+        /// ID del usuario que creó el comentario (alias para compatibilidad)
+        /// </summary>
+        [NotMapped]
+        public Guid CreatedById 
+        { 
+            get => UserId; 
+            set => UserId = value; 
+        }
+
+        /// <summary>
         /// Fecha de creación del comentario
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Fecha de última actualización del comentario
+        /// </summary>
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
         /// <summary>
@@ -50,5 +65,11 @@ namespace ProjectManagement.Api.Models
         /// </summary>
         [ForeignKey(nameof(UserId))]
         public virtual User User { get; set; } = null!;
+
+        /// <summary>
+        /// Usuario que creó el comentario (alias para compatibilidad)
+        /// </summary>
+        [NotMapped]
+        public virtual User CreatedBy => User;
     }
 }

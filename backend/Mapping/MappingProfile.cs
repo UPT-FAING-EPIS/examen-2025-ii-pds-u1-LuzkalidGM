@@ -32,9 +32,9 @@ namespace ProjectManagement.Api.Mapping
             CreateMap<Project, ProjectSummaryDto>()
                 .ForMember(dest => dest.Responsible, opt => opt.MapFrom(src => src.Responsible))
                 .ForMember(dest => dest.TotalTasks, opt => opt.MapFrom(src => src.Tasks.Count))
-                .ForMember(dest => dest.CompletedTasks, opt => opt.MapFrom(src => src.Tasks.Count(t => t.Status == Models.TaskStatus.Completed)))
+                .ForMember(dest => dest.CompletedTasks, opt => opt.MapFrom(src => src.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString())))
                 .ForMember(dest => dest.ProgressPercentage, opt => opt.MapFrom(src => 
-                    src.Tasks.Count > 0 ? (decimal)src.Tasks.Count(t => t.Status == Models.TaskStatus.Completed) / src.Tasks.Count * 100 : 0));
+                    src.Tasks.Count > 0 ? (decimal)src.Tasks.Count(t => t.Status == Models.TaskStatus.Completed.ToString()) / src.Tasks.Count * 100 : 0));
             
             CreateMap<CreateProjectDto, Project>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

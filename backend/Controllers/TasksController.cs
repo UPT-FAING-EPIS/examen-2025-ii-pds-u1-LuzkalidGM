@@ -32,7 +32,7 @@ namespace ProjectManagement.Api.Controllers
         /// <returns>Lista de tareas</returns>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<TaskDto>), 200)]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetTasks([FromQuery] int? projectId)
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetTasks([FromQuery] Guid? projectId)
         {
             if (projectId.HasValue)
             {
@@ -54,7 +54,7 @@ namespace ProjectManagement.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(TaskDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<TaskDto>> GetTask(int id)
+        public async Task<ActionResult<TaskDto>> GetTask(Guid id)
         {
             var task = await _taskService.GetTaskByIdAsync(id);
             
@@ -97,7 +97,7 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(typeof(TaskDto), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<TaskDto>> UpdateTask(int id, [FromBody] UpdateTaskDto updateTaskDto)
+        public async Task<ActionResult<TaskDto>> UpdateTask(Guid id, [FromBody] UpdateTaskDto updateTaskDto)
         {
             if (!ModelState.IsValid)
             {
@@ -123,7 +123,7 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         [Authorize(Roles = "Admin,ProjectManager")]
-        public async Task<IActionResult> DeleteTask(int id)
+        public async Task<IActionResult> DeleteTask(Guid id)
         {
             var result = await _taskService.DeleteTaskAsync(id);
             
@@ -158,7 +158,7 @@ namespace ProjectManagement.Api.Controllers
         [ProducesResponseType(typeof(TaskCommentDto), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<TaskCommentDto>> AddComment(int id, [FromBody] CreateTaskCommentDto createCommentDto)
+        public async Task<ActionResult<TaskCommentDto>> AddComment(Guid id, [FromBody] CreateTaskCommentDto createCommentDto)
         {
             if (!ModelState.IsValid)
             {
@@ -181,11 +181,11 @@ namespace ProjectManagement.Api.Controllers
         /// Obtiene el ID del usuario actual desde el token JWT
         /// </summary>
         /// <returns>ID del usuario</returns>
-        private int GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
             {
                 throw new UnauthorizedAccessException("Token de usuario inválido.");
             }

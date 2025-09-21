@@ -59,6 +59,18 @@ namespace ProjectManagement.Api.Models
         public Guid OwnerId { get; set; }
 
         /// <summary>
+        /// ID del usuario responsable del proyecto (alias para OwnerId)
+        /// </summary>
+        [NotMapped]
+        public Guid ResponsibleId => OwnerId;
+
+        /// <summary>
+        /// ID del usuario que creó el proyecto (alias para OwnerId)
+        /// </summary>
+        [NotMapped]
+        public Guid CreatedById => OwnerId;
+
+        /// <summary>
         /// Fecha de creación del proyecto
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -74,6 +86,18 @@ namespace ProjectManagement.Api.Models
         /// </summary>
         [ForeignKey(nameof(OwnerId))]
         public virtual User Owner { get; set; } = null!;
+
+        /// <summary>
+        /// Usuario responsable del proyecto (alias para Owner)
+        /// </summary>
+        [NotMapped]
+        public virtual User Responsible => Owner;
+
+        /// <summary>
+        /// Usuario que creó el proyecto (alias para Owner)
+        /// </summary>
+        [NotMapped]
+        public virtual User CreatedBy => Owner;
 
         /// <summary>
         /// Tareas del proyecto

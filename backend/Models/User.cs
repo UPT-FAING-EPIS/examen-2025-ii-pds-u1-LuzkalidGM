@@ -23,6 +23,12 @@ namespace ProjectManagement.Api.Models
         public string Email { get; set; } = string.Empty;
 
         /// <summary>
+        /// Nombre de usuario (alias para Email)
+        /// </summary>
+        [NotMapped]
+        public string Username => Email;
+
+        /// <summary>
         /// Nombre del usuario
         /// </summary>
         [Required]
@@ -46,8 +52,7 @@ namespace ProjectManagement.Api.Models
         /// Rol del usuario en el sistema (Admin, ProjectManager, User)
         /// </summary>
         [Required]
-        [StringLength(20)]
-        public string Role { get; set; } = "User";
+        public UserRole Role { get; set; } = UserRole.TeamMember;
 
         /// <summary>
         /// Indica si el usuario está activo

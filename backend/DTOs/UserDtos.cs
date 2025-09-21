@@ -123,17 +123,27 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// ID del usuario
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
-        /// Nombre de usuario
+        /// Nombre
         /// </summary>
-        public string Username { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Apellido
+        /// </summary>
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Correo electrónico
         /// </summary>
         public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Nombre de usuario (alias para Email)
+        /// </summary>
+        public string Username { get; set; } = string.Empty;
 
         /// <summary>
         /// Nombre completo
@@ -164,7 +174,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// ID del usuario
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Nombre de usuario

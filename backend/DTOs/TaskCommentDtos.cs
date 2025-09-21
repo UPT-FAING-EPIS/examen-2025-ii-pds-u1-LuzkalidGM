@@ -23,7 +23,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// ID del comentario
         /// </summary>
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Contenido del comentario

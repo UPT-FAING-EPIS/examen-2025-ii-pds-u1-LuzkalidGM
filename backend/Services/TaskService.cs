@@ -16,14 +16,14 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="projectId">ID del proyecto</param>
         /// <returns>Lista de tareas</returns>
-        Task<IEnumerable<TaskDto>> GetTasksByProjectIdAsync(int projectId);
+        Task<IEnumerable<TaskDto>> GetTasksByProjectIdAsync(Guid projectId);
 
         /// <summary>
         /// Obtiene una tarea por ID
         /// </summary>
         /// <param name="id">ID de la tarea</param>
         /// <returns>Tarea encontrada</returns>
-        Task<TaskDto?> GetTaskByIdAsync(int id);
+        Task<TaskDto?> GetTaskByIdAsync(Guid id);
 
         /// <summary>
         /// Crea una nueva tarea
@@ -31,7 +31,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createTaskDto">Datos de la tarea a crear</param>
         /// <param name="createdById">ID del usuario que crea la tarea</param>
         /// <returns>Tarea creada</returns>
-        Task<TaskDto> CreateTaskAsync(CreateTaskDto createTaskDto, int createdById);
+        Task<TaskDto> CreateTaskAsync(CreateTaskDto createTaskDto, Guid createdById);
 
         /// <summary>
         /// Actualiza una tarea existente
@@ -39,21 +39,21 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID de la tarea</param>
         /// <param name="updateTaskDto">Datos actualizados de la tarea</param>
         /// <returns>Tarea actualizada</returns>
-        Task<TaskDto?> UpdateTaskAsync(int id, UpdateTaskDto updateTaskDto);
+        Task<TaskDto?> UpdateTaskAsync(Guid id, UpdateTaskDto updateTaskDto);
 
         /// <summary>
         /// Elimina una tarea
         /// </summary>
         /// <param name="id">ID de la tarea a eliminar</param>
         /// <returns>True si se eliminó correctamente</returns>
-        Task<bool> DeleteTaskAsync(int id);
+        Task<bool> DeleteTaskAsync(Guid id);
 
         /// <summary>
         /// Obtiene tareas asignadas a un usuario
         /// </summary>
         /// <param name="userId">ID del usuario</param>
         /// <returns>Lista de tareas del usuario</returns>
-        Task<IEnumerable<TaskDto>> GetUserTasksAsync(int userId);
+        Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId);
 
         /// <summary>
         /// Agrega un comentario a una tarea
@@ -62,7 +62,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createCommentDto">Datos del comentario</param>
         /// <param name="createdById">ID del usuario que crea el comentario</param>
         /// <returns>Comentario creado</returns>
-        Task<TaskCommentDto> AddCommentAsync(int taskId, CreateTaskCommentDto createCommentDto, int createdById);
+        Task<TaskCommentDto> AddCommentAsync(Guid taskId, CreateTaskCommentDto createCommentDto, Guid createdById);
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="projectId">ID del proyecto</param>
         /// <returns>Lista de tareas</returns>
-        public async Task<IEnumerable<TaskDto>> GetTasksByProjectIdAsync(int projectId)
+        public async Task<IEnumerable<TaskDto>> GetTasksByProjectIdAsync(Guid projectId)
         {
             var tasks = await _context.Tasks
                 .Include(t => t.Project)
@@ -110,7 +110,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID de la tarea</param>
         /// <returns>Tarea encontrada</returns>
-        public async Task<TaskDto?> GetTaskByIdAsync(int id)
+        public async Task<TaskDto?> GetTaskByIdAsync(Guid id)
         {
             var task = await _context.Tasks
                 .Include(t => t.Project)
@@ -130,7 +130,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createTaskDto">Datos de la tarea a crear</param>
         /// <param name="createdById">ID del usuario que crea la tarea</param>
         /// <returns>Tarea creada</returns>
-        public async Task<TaskDto> CreateTaskAsync(CreateTaskDto createTaskDto, int createdById)
+        public async Task<TaskDto> CreateTaskAsync(CreateTaskDto createTaskDto, Guid createdById)
         {
             var task = new ProjectTask
             {
@@ -142,7 +142,7 @@ namespace ProjectManagement.Api.Services
                 DueDate = createTaskDto.DueDate,
                 EstimatedHours = createTaskDto.EstimatedHours,
                 CreatedById = createdById,
-                Status = Models.TaskStatus.Pending,
+                Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -173,7 +173,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="id">ID de la tarea</param>
         /// <param name="updateTaskDto">Datos actualizados de la tarea</param>
         /// <returns>Tarea actualizada</returns>
-        public async Task<TaskDto?> UpdateTaskAsync(int id, UpdateTaskDto updateTaskDto)
+        public async Task<TaskDto?> UpdateTaskAsync(Guid id, UpdateTaskDto updateTaskDto)
         {
             var task = await _context.Tasks
                 .Include(t => t.Project)
@@ -214,7 +214,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="id">ID de la tarea a eliminar</param>
         /// <returns>True si se eliminó correctamente</returns>
-        public async Task<bool> DeleteTaskAsync(int id)
+        public async Task<bool> DeleteTaskAsync(Guid id)
         {
             var task = await _context.Tasks.FindAsync(id);
             if (task == null) return false;
@@ -229,7 +229,7 @@ namespace ProjectManagement.Api.Services
         /// </summary>
         /// <param name="userId">ID del usuario</param>
         /// <returns>Lista de tareas del usuario</returns>
-        public async Task<IEnumerable<TaskDto>> GetUserTasksAsync(int userId)
+        public async Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId)
         {
             var tasks = await _context.Tasks
                 .Include(t => t.Project)
@@ -252,7 +252,7 @@ namespace ProjectManagement.Api.Services
         /// <param name="createCommentDto">Datos del comentario</param>
         /// <param name="createdById">ID del usuario que crea el comentario</param>
         /// <returns>Comentario creado</returns>
-        public async Task<TaskCommentDto> AddCommentAsync(int taskId, CreateTaskCommentDto createCommentDto, int createdById)
+        public async Task<TaskCommentDto> AddCommentAsync(Guid taskId, CreateTaskCommentDto createCommentDto, Guid createdById)
         {
             var comment = new TaskComment
             {
@@ -304,12 +304,12 @@ namespace ProjectManagement.Api.Services
                     Status = task.Project.Status,
                     StartDate = task.Project.StartDate,
                     EndDate = task.Project.EndDate,
-                    Responsible = _mapper.Map<UserSummaryDto>(task.Project.Responsible),
+                    Responsible = task.Project.Responsible?.FullName ?? "Sin asignar",
                     TotalTasks = 0, // Se puede calcular si es necesario
                     CompletedTasks = 0,
                     ProgressPercentage = 0
                 },
-                AssignedTo = task.AssignedTo != null ? _mapper.Map<UserSummaryDto>(task.AssignedTo) : null,
+                AssignedTo = task.AssignedTo != null ? _mapper.Map<UserDto>(task.AssignedTo) : null,
                 CreatedBy = _mapper.Map<UserSummaryDto>(task.CreatedBy),
                 EstimatedHours = task.EstimatedHours,
                 ActualHours = task.ActualHours,
