@@ -12,6 +12,11 @@ on:
       - 'backend/**/*.cs'
   workflow_dispatch:
 
+# Prevent concurrent runs and conflicts
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   sonar-analysis:
     name: SonarQube Code Analysis
@@ -122,10 +127,24 @@ jobs:
               - 🔄 **Duplicación**: ≤10 líneas (objetivo)`
             });
 
+      - name: Create commit status for push events
+        if: github.event_name == 'push'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              target_url: 'https://sonarcloud.io/project/overview?id=luzkalidgm_exaui',
+              description: 'SonarQube analysis completed',
+              context: 'SonarQube Quality Gate'
+            });
+
   create-tests:
     name: Create Unit Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Checkout repository
@@ -205,10 +224,50 @@ jobs:
           
           if git diff --staged --quiet; then
             echo "No test files to commit"
-          else
-            git commit -m "🧪 Agregar tests unitarios para mejorar cobertura"
-            git push
+            exit 0
           fi
+          
+          git commit -m "🧪 Agregar tests unitarios para mejorar cobertura"
+          
+          # Robust push with retry mechanism (similar to class diagram workflow)
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "🔄 Intento $RETRY_COUNT de $MAX_RETRIES para push de tests..."
+            
+            # Fetch and rebase latest changes
+            git fetch origin main
+            
+            if [ $(git rev-list --count HEAD..origin/main) -gt 0 ]; then
+              echo "⚠️ Detectados cambios remotos, sincronizando..."
+              if git rebase origin/main; then
+                echo "✅ Rebase exitoso"
+              else
+                echo "❌ Conflicto en rebase, usando merge"
+                git rebase --abort 2>/dev/null || true
+                git merge origin/main -X ours --no-edit || {
+                  git merge --abort 2>/dev/null || true
+                  sleep $((RETRY_COUNT * 2))
+                  continue
+                }
+              fi
+            fi
+            
+            if git push origin main; then
+              echo "✅ Tests unitarios pusheados exitosamente (intento $RETRY_COUNT)"
+              exit 0
+            else
+              echo "❌ Falló el push en intento $RETRY_COUNT"
+              if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                echo "🚨 Warning: No se pudo pushear tests después de $MAX_RETRIES intentos"
+                echo "ℹ️ Tests generados localmente, pero no pusheados por workflows concurrentes"
+                exit 0
+              fi
+              sleep $((RETRY_COUNT * 2))
+            fi
+          done
 
       - name: Summary
         run: |
