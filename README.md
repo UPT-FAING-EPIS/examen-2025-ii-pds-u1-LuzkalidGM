@@ -324,3 +324,14 @@ El siguiente diagrama muestra la arquitectura de la infraestructura desplegada e
 4. Las reglas de firewall permiten el acceso controlado a la base de datos
 
 *Diagrama generado automáticamente*
+
+## 📚 Documentación
+
+### 📁 [Ver Documentación](docs/generated/)
+*(GitHub Pages no disponible - documentación guardada localmente)*
+
+La documentación incluye:
+- 📖 **API Reference**: Endpoints y autenticación
+- 🏗️ **Arquitectura**: Diseño del sistema
+- 📊 **Diagramas**: Infraestructura y clases
+

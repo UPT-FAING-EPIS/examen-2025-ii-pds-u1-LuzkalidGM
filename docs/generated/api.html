@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>API Reference</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .endpoint { background: #f6f8fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    .method { font-weight: bold; color: white; padding: 4px 8px; border-radius: 3px; }
+    .get { background: #28a745; }
+    .post { background: #0366d6; }
+  </style>
+</head>
+<body>
+  <h1>📖 API Reference</h1>
+  <p><a href="index.html">← Volver al inicio</a></p>
+  <h2>🔐 Autenticación</h2>
+  <p>JWT Bearer token en header Authorization</p>
+  <h2>👥 Usuarios</h2>
+  <div class="endpoint">
+    <span class="method post">POST</span> /api/users/register
+    <p>Registrar nuevo usuario</p>
+  </div>
+  <div class="endpoint">
+    <span class="method post">POST</span> /api/users/login
+    <p>Autenticar usuario</p>
+  </div>
+  <h2>📁 Proyectos</h2>
+  <div class="endpoint">
+    <span class="method get">GET</span> /api/projects
+    <p>Listar proyectos</p>
+  </div>
+  <div class="endpoint">
+    <span class="method post">POST</span> /api/projects
+    <p>Crear proyecto</p>
+  </div>
+  <h2>📋 Tareas</h2>
+  <div class="endpoint">
+    <span class="method get">GET</span> /api/tasks
+    <p>Listar tareas</p>
+  </div>
+  <div class="endpoint">
+    <span class="method post">POST</span> /api/tasks
+    <p>Crear tarea</p>
+  </div>
+</body>
+</html>
