@@ -1,5 +1,6 @@
 name: Construcción infrastructura en Azure
 
+# Workflow para desplegar infraestructura en Azure usando Terraform
 
 on:
   push:
