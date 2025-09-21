@@ -9,25 +9,32 @@ namespace ProjectManagement.Api.Models
     public class User
     {
         /// <summary>
-        /// Identificador único del usuario
+        /// Identificador único del usuario (GUID para Azure SQL)
         /// </summary>
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-        /// Nombre de usuario único
-        /// </summary>
-        [Required]
-        [StringLength(50)]
-        public string Username { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Correo electrónico del usuario
+        /// Correo electrónico del usuario (usado como username)
         /// </summary>
         [Required]
         [EmailAddress]
         [StringLength(100)]
         public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Nombre del usuario
+        /// </summary>
+        [Required]
+        [StringLength(50)]
+        public string FirstName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Apellido del usuario
+        /// </summary>
+        [Required]
+        [StringLength(50)]
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Hash de la contraseña del usuario
@@ -36,17 +43,16 @@ namespace ProjectManagement.Api.Models
         public string PasswordHash { get; set; } = string.Empty;
 
         /// <summary>
-        /// Nombre completo del usuario
+        /// Rol del usuario en el sistema (Admin, ProjectManager, User)
         /// </summary>
         [Required]
-        [StringLength(100)]
-        public string FullName { get; set; } = string.Empty;
+        [StringLength(20)]
+        public string Role { get; set; } = "User";
 
         /// <summary>
-        /// Rol del usuario en el sistema
+        /// Indica si el usuario está activo
         /// </summary>
-        [Required]
-        public UserRole Role { get; set; }
+        public bool IsActive { get; set; } = true;
 
         /// <summary>
         /// Fecha de creación del usuario
@@ -54,20 +60,21 @@ namespace ProjectManagement.Api.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// Indica si el usuario está activo
+        /// Fecha de última actualización
         /// </summary>
-        public bool IsActive { get; set; } = true;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Nombre completo calculado
+        /// </summary>
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}";
 
         // Navigation properties
         /// <summary>
-        /// Proyectos creados por el usuario
+        /// Proyectos donde es propietario
         /// </summary>
-        public virtual ICollection<Project> CreatedProjects { get; set; } = new List<Project>();
-
-        /// <summary>
-        /// Proyectos asignados al usuario
-        /// </summary>
-        public virtual ICollection<Project> AssignedProjects { get; set; } = new List<Project>();
+        public virtual ICollection<Project> OwnedProjects { get; set; } = new List<Project>();
 
         /// <summary>
         /// Tareas asignadas al usuario
@@ -75,9 +82,19 @@ namespace ProjectManagement.Api.Models
         public virtual ICollection<ProjectTask> AssignedTasks { get; set; } = new List<ProjectTask>();
 
         /// <summary>
-        /// Comentarios creados por el usuario
+        /// Tareas creadas por el usuario
         /// </summary>
-        public virtual ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
+        public virtual ICollection<ProjectTask> CreatedTasks { get; set; } = new List<ProjectTask>();
+
+        /// <summary>
+        /// Comentarios del usuario
+        /// </summary>
+        public virtual ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();
+
+        /// <summary>
+        /// Membresías en proyectos
+        /// </summary>
+        public virtual ICollection<ProjectMember> ProjectMemberships { get; set; } = new List<ProjectMember>();
     }
 
     /// <summary>

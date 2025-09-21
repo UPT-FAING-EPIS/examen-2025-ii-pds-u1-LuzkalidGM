@@ -9,22 +9,22 @@ namespace ProjectManagement.Api.Models
     public class Project
     {
         /// <summary>
-        /// Identificador único del proyecto
+        /// Identificador único del proyecto (GUID para Azure SQL)
         /// </summary>
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
         /// Nombre del proyecto
         /// </summary>
         [Required]
-        [StringLength(200)]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Descripción detallada del proyecto
         /// </summary>
-        [StringLength(1000)]
+        [StringLength(500)]
         public string Description { get; set; } = string.Empty;
 
         /// <summary>
@@ -36,26 +36,27 @@ namespace ProjectManagement.Api.Models
         /// <summary>
         /// Fecha de finalización prevista del proyecto
         /// </summary>
-        [Required]
-        public DateTime EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
         /// <summary>
         /// Estado actual del proyecto
         /// </summary>
         [Required]
-        public ProjectStatus Status { get; set; } = ProjectStatus.Planning;
+        [StringLength(20)]
+        public string Status { get; set; } = "Planning";
 
         /// <summary>
-        /// ID del usuario creador del proyecto
+        /// Prioridad del proyecto
         /// </summary>
         [Required]
-        public int CreatedById { get; set; }
+        [StringLength(10)]
+        public string Priority { get; set; } = "Medium";
 
         /// <summary>
-        /// ID del usuario responsable del proyecto
+        /// ID del usuario propietario del proyecto
         /// </summary>
         [Required]
-        public int ResponsibleId { get; set; }
+        public Guid OwnerId { get; set; }
 
         /// <summary>
         /// Fecha de creación del proyecto
@@ -69,21 +70,20 @@ namespace ProjectManagement.Api.Models
 
         // Navigation properties
         /// <summary>
-        /// Usuario que creó el proyecto
+        /// Usuario propietario del proyecto
         /// </summary>
-        [ForeignKey("CreatedById")]
-        public virtual User CreatedBy { get; set; } = null!;
+        [ForeignKey(nameof(OwnerId))]
+        public virtual User Owner { get; set; } = null!;
 
         /// <summary>
-        /// Usuario responsable del proyecto
-        /// </summary>
-        [ForeignKey("ResponsibleId")]
-        public virtual User Responsible { get; set; } = null!;
-
-        /// <summary>
-        /// Tareas asociadas al proyecto
+        /// Tareas del proyecto
         /// </summary>
         public virtual ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
+
+        /// <summary>
+        /// Miembros del proyecto
+        /// </summary>
+        public virtual ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ namespace ProjectManagement.Api.Models
         /// Identificador único del comentario
         /// </summary>
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
         /// Contenido del comentario
@@ -25,35 +25,30 @@ namespace ProjectManagement.Api.Models
         /// ID de la tarea a la que pertenece el comentario
         /// </summary>
         [Required]
-        public int TaskId { get; set; }
+        public Guid TaskId { get; set; }
 
         /// <summary>
         /// ID del usuario que creó el comentario
         /// </summary>
         [Required]
-        public int CreatedById { get; set; }
+        public Guid UserId { get; set; }
 
         /// <summary>
         /// Fecha de creación del comentario
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        /// <summary>
-        /// Fecha de última actualización del comentario
-        /// </summary>
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         // Navigation properties
         /// <summary>
         /// Tarea a la que pertenece el comentario
         /// </summary>
-        [ForeignKey("TaskId")]
+        [ForeignKey(nameof(TaskId))]
         public virtual ProjectTask Task { get; set; } = null!;
 
         /// <summary>
         /// Usuario que creó el comentario
         /// </summary>
-        [ForeignKey("CreatedById")]
-        public virtual User CreatedBy { get; set; } = null!;
+        [ForeignKey(nameof(UserId))]
+        public virtual User User { get; set; } = null!;
     }
 }

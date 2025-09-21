@@ -37,6 +37,11 @@ namespace ProjectManagement.Api.Data
         public DbSet<TaskComment> TaskComments { get; set; }
 
         /// <summary>
+        /// Conjunto de entidades de miembros de proyecto
+        /// </summary>
+        public DbSet<ProjectMember> ProjectMembers { get; set; }
+
+        /// <summary>
         /// Configuración del modelo de datos
         /// </summary>
         /// <param name="modelBuilder">Constructor del modelo</param>
@@ -47,62 +52,54 @@ namespace ProjectManagement.Api.Data
             // Configuración de User
             modelBuilder.Entity<User>(entity =>
             {
-                entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Email).IsUnique();
-                
-                entity.Property(e => e.Role)
-                    .HasConversion<int>();
+                entity.Property(e => e.Role).HasDefaultValue("User");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
             });
 
             // Configuración de Project
             modelBuilder.Entity<Project>(entity =>
             {
-                entity.Property(e => e.Status)
-                    .HasConversion<int>();
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Status).HasDefaultValue("Planning");
+                entity.Property(e => e.Priority).HasDefaultValue("Medium");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
 
-                // Relación con Usuario Creador
-                entity.HasOne(p => p.CreatedBy)
-                    .WithMany(u => u.CreatedProjects)
-                    .HasForeignKey(p => p.CreatedById)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // Relación con Usuario Responsable
-                entity.HasOne(p => p.Responsible)
-                    .WithMany(u => u.AssignedProjects)
-                    .HasForeignKey(p => p.ResponsibleId)
+                // Relación con Owner
+                entity.HasOne(p => p.Owner)
+                    .WithMany(u => u.OwnedProjects)
+                    .HasForeignKey(p => p.OwnerId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configuración de ProjectTask
             modelBuilder.Entity<ProjectTask>(entity =>
             {
-                entity.Property(e => e.Status)
-                    .HasConversion<int>();
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Status).HasDefaultValue("Pending");
+                entity.Property(e => e.Priority).HasDefaultValue("Medium");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
 
-                entity.Property(e => e.Priority)
-                    .HasConversion<int>();
-
-                entity.Property(e => e.EstimatedHours)
-                    .HasColumnType("decimal(18,2)");
-
-                entity.Property(e => e.ActualHours)
-                    .HasColumnType("decimal(18,2)");
-
-                // Relación con Proyecto
+                // Relación con Project
                 entity.HasOne(t => t.Project)
                     .WithMany(p => p.Tasks)
                     .HasForeignKey(t => t.ProjectId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Relación con Usuario Asignado
+                // Relación con AssignedTo (opcional)
                 entity.HasOne(t => t.AssignedTo)
                     .WithMany(u => u.AssignedTasks)
                     .HasForeignKey(t => t.AssignedToId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                // Relación con Usuario Creador
+                // Relación con CreatedBy
                 entity.HasOne(t => t.CreatedBy)
-                    .WithMany()
+                    .WithMany(u => u.CreatedTasks)
                     .HasForeignKey(t => t.CreatedById)
                     .OnDelete(DeleteBehavior.Restrict);
             });
@@ -110,43 +107,58 @@ namespace ProjectManagement.Api.Data
             // Configuración de TaskComment
             modelBuilder.Entity<TaskComment>(entity =>
             {
-                // Relación con Tarea
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+                // Relación con Task
                 entity.HasOne(c => c.Task)
                     .WithMany(t => t.Comments)
                     .HasForeignKey(c => c.TaskId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Relación con Usuario Creador
-                entity.HasOne(c => c.CreatedBy)
-                    .WithMany(u => u.Comments)
-                    .HasForeignKey(c => c.CreatedById)
+                // Relación con User
+                entity.HasOne(c => c.User)
+                    .WithMany(u => u.TaskComments)
+                    .HasForeignKey(c => c.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Datos iniciales
-            SeedData(modelBuilder);
-        }
+            // Configuración de ProjectMember
+            modelBuilder.Entity<ProjectMember>(entity =>
+            {
+                // Clave compuesta
+                entity.HasKey(pm => new { pm.ProjectId, pm.UserId });
+                entity.Property(e => e.Role).HasDefaultValue("Member");
+                entity.Property(e => e.JoinedAt).HasDefaultValueSql("GETUTCDATE()");
 
-        /// <summary>
-        /// Siembra datos iniciales en la base de datos
-        /// </summary>
-        /// <param name="modelBuilder">Constructor del modelo</param>
-        private static void SeedData(ModelBuilder modelBuilder)
-        {
-            // Usuario administrador por defecto
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = 1,
-                    Username = "admin",
-                    Email = "admin@projectmanagement.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                    FullName = "Administrador del Sistema",
-                    Role = UserRole.Admin,
-                    CreatedAt = DateTime.UtcNow,
-                    IsActive = true
-                }
-            );
+                // Relación con Project
+                entity.HasOne(pm => pm.Project)
+                    .WithMany(p => p.Members)
+                    .HasForeignKey(pm => pm.ProjectId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relación con User
+                entity.HasOne(pm => pm.User)
+                    .WithMany(u => u.ProjectMemberships)
+                    .HasForeignKey(pm => pm.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Índices adicionales para rendimiento
+            modelBuilder.Entity<Project>()
+                .HasIndex(p => p.OwnerId);
+
+            modelBuilder.Entity<ProjectTask>()
+                .HasIndex(t => t.ProjectId);
+
+            modelBuilder.Entity<ProjectTask>()
+                .HasIndex(t => t.AssignedToId);
+
+            modelBuilder.Entity<TaskComment>()
+                .HasIndex(c => c.TaskId);
+
+            modelBuilder.Entity<ProjectMember>()
+                .HasIndex(pm => pm.UserId);
         }
     }
 }
