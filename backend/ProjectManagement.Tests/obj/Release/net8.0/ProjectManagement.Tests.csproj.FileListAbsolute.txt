@@ -3,6 +3,7 @@
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/ProjectManagement.Api.runtimeconfig.json
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/appsettings.Development.json
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/appsettings.json
+/home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/appsettings.Production.json
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/ProjectManagement.Api
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/MvcTestingAppManifest.json
 /home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/bin/Release/net8.0/xunit.runner.visualstudio.dotnetcore.testadapter.dll
