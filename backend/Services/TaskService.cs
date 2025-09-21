@@ -142,7 +142,7 @@ namespace ProjectManagement.Api.Services
                 DueDate = createTaskDto.DueDate,
                 EstimatedHours = createTaskDto.EstimatedHours,
                 CreatedById = createdById,
-                Status = TaskStatus.Pending,
+                Status = Models.TaskStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

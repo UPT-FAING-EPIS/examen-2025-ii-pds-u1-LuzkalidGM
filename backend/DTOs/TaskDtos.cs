@@ -72,7 +72,7 @@ namespace ProjectManagement.Api.DTOs
         /// Estado de la tarea
         /// </summary>
         [Required]
-        public TaskStatus Status { get; set; }
+        public Models.TaskStatus Status { get; set; }
 
         /// <summary>
         /// Prioridad de la tarea
@@ -126,7 +126,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Estado de la tarea
         /// </summary>
-        public TaskStatus Status { get; set; }
+        public Models.TaskStatus Status { get; set; }
 
         /// <summary>
         /// Prioridad de la tarea
@@ -197,7 +197,7 @@ namespace ProjectManagement.Api.DTOs
         /// <summary>
         /// Estado de la tarea
         /// </summary>
-        public TaskStatus Status { get; set; }
+        public Models.TaskStatus Status { get; set; }
 
         /// <summary>
         /// Prioridad de la tarea

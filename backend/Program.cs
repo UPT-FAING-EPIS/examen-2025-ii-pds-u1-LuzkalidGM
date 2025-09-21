@@ -21,7 +21,7 @@ builder.Services.AddControllers()
 
 // Database configuration
 builder.Services.AddDbContext<ProjectManagementContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // AutoMapper configuration
 builder.Services.AddAutoMapper(typeof(MappingProfile));

@@ -97,9 +97,9 @@ namespace ProjectManagement.Api.Services
                 EndDate = p.EndDate,
                 Responsible = _mapper.Map<UserSummaryDto>(p.Responsible),
                 TotalTasks = p.Tasks.Count,
-                CompletedTasks = p.Tasks.Count(t => t.Status == TaskStatus.Completed),
+                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed),
                 ProgressPercentage = p.Tasks.Count > 0 ? 
-                    (decimal)p.Tasks.Count(t => t.Status == TaskStatus.Completed) / p.Tasks.Count * 100 : 0
+                    (decimal)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed) / p.Tasks.Count * 100 : 0
             });
         }
 
@@ -283,9 +283,9 @@ namespace ProjectManagement.Api.Services
                 EndDate = p.EndDate,
                 Responsible = _mapper.Map<UserSummaryDto>(p.Responsible),
                 TotalTasks = p.Tasks.Count,
-                CompletedTasks = p.Tasks.Count(t => t.Status == TaskStatus.Completed),
+                CompletedTasks = p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed),
                 ProgressPercentage = p.Tasks.Count > 0 ? 
-                    (decimal)p.Tasks.Count(t => t.Status == TaskStatus.Completed) / p.Tasks.Count * 100 : 0
+                    (decimal)p.Tasks.Count(t => t.Status == Models.TaskStatus.Completed) / p.Tasks.Count * 100 : 0
             });
         }
     }
