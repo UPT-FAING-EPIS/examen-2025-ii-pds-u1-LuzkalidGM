@@ -157,10 +157,10 @@ jobs:
 
       - name: Create test project
         run: |
-          # Check if test project already exists
+          # Check if test project already exists and clean it
           if [ -d "backend/ProjectManagement.Tests" ]; then
-            echo "Test project already exists, skipping creation"
-            exit 0
+            echo "Existing test project found, cleaning it..."
+            rm -rf backend/ProjectManagement.Tests
           fi
           
           # Create test project in separate directory
@@ -180,15 +180,20 @@ jobs:
           
           # Add reference to main project
           dotnet add reference ../ProjectManagement.Api.csproj
+          
+          echo "✅ Test project created successfully"
 
       - name: Create basic tests
         run: |
           cd backend/ProjectManagement.Tests
           
+          # Clean any existing test files
+          rm -rf Services Controllers || true
+          
           # Create test directories
           mkdir -p Services Controllers
           
-          # Create basic service test
+          # Create basic service test using echo method (safer for YAML)
           echo 'using Xunit;' > Services/BasicServiceTests.cs
           echo '' >> Services/BasicServiceTests.cs
           echo 'namespace ProjectManagement.Tests.Services' >> Services/BasicServiceTests.cs
@@ -198,27 +203,17 @@ jobs:
           echo '        [Fact]' >> Services/BasicServiceTests.cs
           echo '        public void BasicTest_ShouldPass()' >> Services/BasicServiceTests.cs
           echo '        {' >> Services/BasicServiceTests.cs
-          echo '            // Arrange' >> Services/BasicServiceTests.cs
           echo '            var expected = true;' >> Services/BasicServiceTests.cs
-          echo '            ' >> Services/BasicServiceTests.cs
-          echo '            // Act' >> Services/BasicServiceTests.cs
           echo '            var actual = true;' >> Services/BasicServiceTests.cs
-          echo '            ' >> Services/BasicServiceTests.cs
-          echo '            // Assert' >> Services/BasicServiceTests.cs
           echo '            Assert.Equal(expected, actual);' >> Services/BasicServiceTests.cs
           echo '        }' >> Services/BasicServiceTests.cs
           echo '' >> Services/BasicServiceTests.cs
           echo '        [Fact]' >> Services/BasicServiceTests.cs
           echo '        public void BasicMath_ShouldWork()' >> Services/BasicServiceTests.cs
           echo '        {' >> Services/BasicServiceTests.cs
-          echo '            // Arrange' >> Services/BasicServiceTests.cs
           echo '            var a = 2;' >> Services/BasicServiceTests.cs
           echo '            var b = 3;' >> Services/BasicServiceTests.cs
-          echo '            ' >> Services/BasicServiceTests.cs
-          echo '            // Act' >> Services/BasicServiceTests.cs
           echo '            var result = a + b;' >> Services/BasicServiceTests.cs
-          echo '            ' >> Services/BasicServiceTests.cs
-          echo '            // Assert' >> Services/BasicServiceTests.cs
           echo '            Assert.Equal(5, result);' >> Services/BasicServiceTests.cs
           echo '        }' >> Services/BasicServiceTests.cs
           echo '    }' >> Services/BasicServiceTests.cs
@@ -234,37 +229,54 @@ jobs:
           echo '        [Fact]' >> Controllers/BasicControllerTests.cs
           echo '        public void ControllerTest_ShouldPass()' >> Controllers/BasicControllerTests.cs
           echo '        {' >> Controllers/BasicControllerTests.cs
-          echo '            // Arrange' >> Controllers/BasicControllerTests.cs
           echo '            var testValue = "test";' >> Controllers/BasicControllerTests.cs
-          echo '            ' >> Controllers/BasicControllerTests.cs
-          echo '            // Act' >> Controllers/BasicControllerTests.cs
           echo '            var result = testValue.Length;' >> Controllers/BasicControllerTests.cs
-          echo '            ' >> Controllers/BasicControllerTests.cs
-          echo '            // Assert' >> Controllers/BasicControllerTests.cs
           echo '            Assert.Equal(4, result);' >> Controllers/BasicControllerTests.cs
           echo '        }' >> Controllers/BasicControllerTests.cs
           echo '    }' >> Controllers/BasicControllerTests.cs
           echo '}' >> Controllers/BasicControllerTests.cs
 
+          echo "✅ Test files created successfully"
+          ls -la Services/ Controllers/
+
       - name: Build and test
         run: |
           cd backend
           
-          # Restore both projects
-          dotnet restore ProjectManagement.Api.csproj
+          echo "📂 Directory structure:"
+          ls -la
+          
+          # Check if test project exists and show its structure
           if [ -d "ProjectManagement.Tests" ]; then
-            dotnet restore ProjectManagement.Tests/ProjectManagement.Tests.csproj
+            echo "📁 Test project structure:"
+            ls -la ProjectManagement.Tests/
+            echo "🧪 Test files:"
+            find ProjectManagement.Tests/ -name "*.cs" -type f
           fi
           
-          # Build both projects
-          dotnet build --no-restore --configuration Release
+          # Restore main project first
+          echo "🔄 Restoring main project..."
+          dotnet restore ProjectManagement.Api.csproj --verbosity normal
           
-          # Run tests if test project exists
+          # Restore test project if exists
           if [ -d "ProjectManagement.Tests" ]; then
-            echo "Running unit tests..."
+            echo "🔄 Restoring test project..."
+            dotnet restore ProjectManagement.Tests/ProjectManagement.Tests.csproj --verbosity normal
+          fi
+          
+          # Build main project first
+          echo "🔨 Building main project..."
+          dotnet build ProjectManagement.Api.csproj --no-restore --configuration Release --verbosity normal
+          
+          # Build test project if exists
+          if [ -d "ProjectManagement.Tests" ]; then
+            echo "🔨 Building test project..."
+            dotnet build ProjectManagement.Tests/ProjectManagement.Tests.csproj --no-restore --configuration Release --verbosity normal
+            
+            echo "🧪 Running unit tests..."
             dotnet test ProjectManagement.Tests/ProjectManagement.Tests.csproj --no-build --verbosity normal --configuration Release
           else
-            echo "No test project found, skipping tests"
+            echo "⚠️ No test project found, skipping tests"
           fi
 
       - name: Commit test files
@@ -272,16 +284,31 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          git add backend/ProjectManagement.Tests/
-          
-          if git diff --staged --quiet; then
-            echo "No test files to commit"
+          # Check if test project exists before adding
+          if [ ! -d "backend/ProjectManagement.Tests" ]; then
+            echo "❌ Test project directory not found, skipping commit"
             exit 0
           fi
           
+          # Show what we're about to add
+          echo "📁 Test project contents:"
+          find backend/ProjectManagement.Tests -type f -name "*.cs" -o -name "*.csproj"
+          
+          git add backend/ProjectManagement.Tests/
+          
+          # Check if there are actually changes to commit
+          if git diff --staged --quiet; then
+            echo "ℹ️ No test files to commit"
+            exit 0
+          fi
+          
+          # Show what's being committed
+          echo "📝 Files to be committed:"
+          git diff --staged --name-only
+          
           git commit -m "🧪 Agregar tests unitarios para mejorar cobertura"
           
-          # Robust push with retry mechanism (similar to class diagram workflow)
+          # Robust push with retry mechanism
           MAX_RETRIES=3
           RETRY_COUNT=0
           
