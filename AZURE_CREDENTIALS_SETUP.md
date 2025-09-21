@@ -18,10 +18,16 @@ Como ya tienes el Service Principal creado, necesitas crear el JSON con esta est
 - Busca tu Service Principal
 - Copia el **Application (client) ID**
 
-### 2. **clientSecret** 
+### 2. **clientSecret** ⚠️ **MUY IMPORTANTE**
 - En tu Service Principal → Certificates & secrets
 - Si no tienes uno, crea un **New client secret**
-- Copia el **Value** (no el Secret ID)
+- ⚠️ **COPIA EL "VALUE"** (NO el "Secret ID") 
+- ⚠️ **El Value solo se muestra UNA VEZ** al crear el secret
+- ⚠️ **Si no lo copiaste, debes crear un nuevo secret**
+
+**Problema común**: Error "Invalid client secret provided"
+- **Causa**: Copiaste el Secret ID en lugar del Secret Value
+- **Solución**: Crear un nuevo client secret y copiar el Value correctamente
 
 ### 3. **subscriptionId**
 - Azure Portal → Subscriptions
