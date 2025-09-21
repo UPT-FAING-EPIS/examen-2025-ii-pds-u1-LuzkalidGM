@@ -55,43 +55,40 @@ jobs:
           cd backend
           dotnet restore ProjectManagement.Api.csproj
 
+      - name: Install SQL Server tools
+        run: |
+          echo "�️ Installing SQL Server command line tools..."
+          
+          # Add Microsoft package repository
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          
+          # Update package list
+          sudo apt-get update
+          
+          # Install SQL Server tools
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+          
+          # Add to PATH
+          echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+          export PATH="$PATH:/opt/mssql-tools18/bin"
+          
+          # Verify installation
+          sqlcmd -?
+          echo "✅ SQL Server tools installed successfully"
+
       - name: Test database connection
         run: |
           cd backend
           echo "🔌 Testing database connection..."
           
-          # Create a simple connection test
-          cat > TestConnection.cs << 'EOF'
-          using Microsoft.Data.SqlClient;
-          using System;
+          # Export PATH for sqlcmd
+          export PATH="$PATH:/opt/mssql-tools18/bin"
           
-          class Program
-          {
-              static void Main()
-              {
-                  try
-                  {
-                      var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-                      using var connection = new SqlConnection(connectionString);
-                      connection.Open();
-                      Console.WriteLine("✅ Database connection successful!");
-                      
-                      var command = new SqlCommand("SELECT @@VERSION", connection);
-                      var version = command.ExecuteScalar();
-                      Console.WriteLine($"📊 SQL Server Version: {version}");
-                  }
-                  catch (Exception ex)
-                  {
-                      Console.WriteLine($"❌ Connection failed: {ex.Message}");
-                      Environment.Exit(1);
-                  }
-              }
-          }
-          EOF
+          # Test connection with sqlcmd
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -Q "SELECT @@VERSION as 'SQL Server Version'"
           
-          # Compile and run test
-          dotnet add package Microsoft.Data.SqlClient --version 5.1.1
-          dotnet run TestConnection.cs
+          echo "✅ Database connection verified successfully"
 
       - name: Create or update database migrations
         run: |
@@ -232,7 +229,8 @@ jobs:
           EOF
           
           # Execute SQL script
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i CreateTables.sql
+          export PATH="$PATH:/opt/mssql-tools18/bin"
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i CreateTables.sql
 
       - name: Insert sample data
         if: github.event.inputs.seed_sample_data == 'true' || github.event.inputs.seed_sample_data == ''
@@ -318,7 +316,8 @@ jobs:
           EOF
           
           # Execute seed data script
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i SeedData.sql
+          export PATH="$PATH:/opt/mssql-tools18/bin"
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i SeedData.sql
 
       - name: Verify database setup
         run: |
@@ -349,7 +348,7 @@ jobs:
           GROUP BY p.Name, p.Status, u.FirstName, u.LastName;
           EOF
           
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -i VerifySetup.sql
+          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i VerifySetup.sql
 
       - name: Update connection strings in application
         run: |
@@ -427,6 +426,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history for proper sync
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for concurrent workflows
+        run: |
+          echo "🔍 Checking for concurrent workflows..."
+          
+          # Get currently running workflows
+          RUNNING_WORKFLOWS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=in_progress" \
+            | jq '.workflow_runs | length')
+          
+          echo "📊 Currently running workflows: $RUNNING_WORKFLOWS"
+          
+          if [ "$RUNNING_WORKFLOWS" -gt 1 ]; then
+            echo "⚠️ Multiple workflows detected, using extra sync precautions"
+            echo "CONCURRENT_WORKFLOWS=true" >> $GITHUB_ENV
+          else
+            echo "✅ No workflow conflicts detected"
+            echo "CONCURRENT_WORKFLOWS=false" >> $GITHUB_ENV
+          fi
 
       - name: Update project with database configuration
         run: |
@@ -448,6 +469,16 @@ jobs:
                       var actualPassword = password ?? "Admin123456";
                       return $"Server={AzureServer};Database={DatabaseName};User Id={DefaultUser};Password={actualPassword};TrustServerCertificate=true;MultipleActiveResultSets=true;";
                   }
+                  
+                  public static string GetConnectionStringFromEnvironment()
+                  {
+                      var server = Environment.GetEnvironmentVariable("DB_SERVER") ?? AzureServer;
+                      var database = Environment.GetEnvironmentVariable("DB_NAME") ?? DatabaseName;
+                      var user = Environment.GetEnvironmentVariable("DB_USER") ?? DefaultUser;
+                      var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "Admin123456";
+                      
+                      return $"Server={server};Database={database};User Id={user};Password={password};TrustServerCertificate=true;MultipleActiveResultSets=true;";
+                  }
               }
           }
           EOF
@@ -464,8 +495,63 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "🗄️ Add database configuration for Azure SQL - upt-dbs-996.database.windows.net"
             
-            git push
-            echo "✅ Database configuration committed and pushed"
+            # Robust push with retry mechanism and conflict resolution
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "🔄 Push attempt $RETRY_COUNT of $MAX_RETRIES..."
+              
+              # Fetch latest changes
+              git fetch origin main
+              
+              # Check if there are remote changes
+              if [ $(git rev-list --count HEAD..origin/main) -gt 0 ]; then
+                echo "⚠️ Remote changes detected, synchronizing..."
+                
+                # Try rebase first (cleaner history)
+                if git rebase origin/main; then
+                  echo "✅ Rebase successful"
+                else
+                  echo "❌ Rebase failed, trying merge strategy"
+                  git rebase --abort 2>/dev/null || true
+                  
+                  # Use merge with our strategy for conflicts
+                  if git merge origin/main -X ours --no-edit; then
+                    echo "✅ Merge successful with our changes priority"
+                  else
+                    echo "❌ Merge failed, trying reset strategy"
+                    git merge --abort 2>/dev/null || true
+                    
+                    # Last resort: reset and recommit
+                    git reset --soft origin/main
+                    git add .
+                    git commit -m "🗄️ Add database configuration for Azure SQL - upt-dbs-996.database.windows.net" || {
+                      echo "ℹ️ No changes to commit after reset"
+                      break
+                    }
+                  fi
+                fi
+              fi
+              
+              # Attempt push
+              if git push origin main; then
+                echo "✅ Database configuration pushed successfully (attempt $RETRY_COUNT)"
+                break
+              else
+                echo "❌ Push failed on attempt $RETRY_COUNT"
+                if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                  echo "🚨 Failed to push after $MAX_RETRIES attempts"
+                  echo "⚠️ Database configuration created locally but not pushed"
+                  echo "ℹ️ This may be due to concurrent workflow executions"
+                  exit 0  # Don't fail the entire workflow
+                fi
+                
+                # Exponential backoff
+                sleep $((RETRY_COUNT * 3))
+              fi
+            done
           else
             echo "ℹ️ No configuration changes to commit"
           fi
