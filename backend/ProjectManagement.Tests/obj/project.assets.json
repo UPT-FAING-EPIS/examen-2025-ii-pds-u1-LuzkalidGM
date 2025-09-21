@@ -10481,6 +10481,7 @@
       "outputPath": "/home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/ProjectManagement.Tests/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
+        "/home/runner/work/examen-2025-ii-pds-u1-LuzkalidGM/examen-2025-ii-pds-u1-LuzkalidGM/backend/nuget.config",
         "/home/runner/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
