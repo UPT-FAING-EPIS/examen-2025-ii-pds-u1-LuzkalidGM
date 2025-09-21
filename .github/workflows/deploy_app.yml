@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AZURE_WEBAPP_NAME: 'projectmanagement-api-988'
+  AZURE_WEBAPP_NAME: 'projectmanagement-api-991'
   AZURE_WEBAPP_PACKAGE_PATH: './backend'
   DOTNET_VERSION: '8.0.x'
 

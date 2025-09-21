@@ -26,11 +26,11 @@ concurrency:
 
 env:
   # Azure SQL Database Configuration
-  DB_SERVER: "upt-dbs-996.database.windows.net"
+  DB_SERVER: "upt-dbs-991-gm.database.windows.net"
   DB_NAME: "shorten"
   DB_USER: "adminuser"
   DB_PASSWORD: "Admin123456"
-  CONNECTION_STRING: "Server=upt-dbs-996.database.windows.net;Database=shorten;User Id=adminuser;Password=Admin123456;TrustServerCertificate=true;MultipleActiveResultSets=true;"
+  CONNECTION_STRING: "Server=upt-dbs-991-gm.database.windows.net;Database=shorten;User Id=adminuser;Password=Admin123456;TrustServerCertificate=true;MultipleActiveResultSets=true;"
 
 jobs:
   database-setup:
