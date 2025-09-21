@@ -14,10 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
-  actions: read
 
 jobs:
   generate-documentation:
@@ -147,18 +146,28 @@ jobs:
           cp docs/*.png docs_site/ 2>/dev/null || echo "No diagrams to copy"
 
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v4
-        with:
-          enablement: true
+        continue-on-error: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'docs_site'
+        continue-on-error: true
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Fallback - Save documentation to repository
+        if: steps.deployment.outcome == 'failure'
+        run: |
+          echo "GitHub Pages no disponible, guardando documentación en el repositorio..."
+          mkdir -p docs/generated
+          cp -r docs_site/* docs/generated/
+          echo "📚 Documentación generada en: docs/generated/" > docs/generated/README.md
 
       - name: Update README
         run: |
@@ -166,7 +175,12 @@ jobs:
             echo "" >> README.md
             echo "## 📚 Documentación" >> README.md
             echo "" >> README.md
-            echo "### 🌐 [Ver Documentación Completa](https://UPT-FAING-EPIS.github.io/examen-2025-ii-pds-u1-LuzkalidGM/)" >> README.md
+            if [ "${{ steps.deployment.outcome }}" == "success" ]; then
+              echo "### 🌐 [Ver Documentación Completa](https://UPT-FAING-EPIS.github.io/examen-2025-ii-pds-u1-LuzkalidGM/)" >> README.md
+            else
+              echo "### 📁 [Ver Documentación](docs/generated/)" >> README.md
+              echo "*(GitHub Pages no disponible - documentación guardada localmente)*" >> README.md
+            fi
             echo "" >> README.md
             echo "La documentación incluye:" >> README.md
             echo "- 📖 **API Reference**: Endpoints y autenticación" >> README.md
@@ -179,13 +193,19 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add README.md || true
+          git add README.md docs/generated/ || true
           git diff --staged --quiet || (git commit -m "📚 Actualizar documentación" && git push)
 
       - name: Summary
         run: |
-          echo "## 📚 Documentación Desplegada" >> $GITHUB_STEP_SUMMARY
+          echo "## 📚 Documentación Generada" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Sitio generado exitosamente**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Documentación creada exitosamente**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 [**Ver Documentación**](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.deployment.outcome }}" == "success" ]; then
+            echo "🌐 [**Ver en GitHub Pages**](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📁 **Documentación disponible en**: \`docs/generated/\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ *GitHub Pages no está habilitado. La documentación se guardó localmente.*" >> $GITHUB_STEP_SUMMARY
+          fi
