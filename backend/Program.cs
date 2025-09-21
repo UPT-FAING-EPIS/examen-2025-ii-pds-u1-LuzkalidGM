@@ -1,3 +1,4 @@
+// Project Management API - Sistema de gestión de proyectos
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
