@@ -1,0 +1,229 @@
+name: Generar Diagrama de Clases
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**/*.cs'
+      - '.github/workflows/class_diagram.yml'
+  workflow_dispatch:
+
+jobs:
+  generate-class-diagram:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install diagrams
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Generate Class Diagram
+        run: |
+          python - <<EOF
+          from diagrams import Diagram, Cluster, Edge
+          from diagrams.programming.language import Csharp
+          from diagrams.generic.blank import Blank
+          from diagrams.onprem.database import Postgresql
+          import os
+
+          # Create docs directory if it doesn't exist
+          os.makedirs("docs", exist_ok=True)
+
+          # Configure diagram attributes
+          graph_attr = {
+              "fontsize": "14",
+              "bgcolor": "white",
+              "rankdir": "TB",
+              "splines": "ortho",
+              "nodesep": "0.8",
+              "ranksep": "1.2"
+          }
+
+          with Diagram("Diagrama de Clases - Project Management API", 
+                      filename="docs/class_diagram", 
+                      show=False, 
+                      direction="TB",
+                      graph_attr=graph_attr):
+              
+              with Cluster("Models"):
+                  user = Csharp("User")
+                  project = Csharp("Project")
+                  task = Csharp("ProjectTask")
+                  comment = Csharp("TaskComment")
+              
+              with Cluster("DTOs"):
+                  user_dto = Csharp("UserDto")
+                  project_dto = Csharp("ProjectDto")
+                  task_dto = Csharp("TaskDto")
+                  comment_dto = Csharp("TaskCommentDto")
+              
+              with Cluster("Services"):
+                  user_service = Csharp("UserService")
+                  project_service = Csharp("ProjectService")
+                  task_service = Csharp("TaskService")
+                  jwt_service = Csharp("JwtService")
+              
+              with Cluster("Controllers"):
+                  users_controller = Csharp("UsersController")
+                  projects_controller = Csharp("ProjectsController")
+                  tasks_controller = Csharp("TasksController")
+              
+              with Cluster("Data"):
+                  context = Postgresql("ProjectManagementContext")
+              
+              # Model relationships
+              user >> Edge(label="1:N", style="dashed") >> project
+              project >> Edge(label="1:N", style="dashed") >> task
+              task >> Edge(label="1:N", style="dashed") >> comment
+              user >> Edge(label="1:N", style="dashed") >> task
+              user >> Edge(label="1:N", style="dashed") >> comment
+              
+              # Service relationships
+              user_service >> Edge(style="dotted") >> context
+              project_service >> Edge(style="dotted") >> context
+              task_service >> Edge(style="dotted") >> context
+              
+              # Controller relationships
+              users_controller >> Edge(style="bold") >> user_service
+              projects_controller >> Edge(style="bold") >> project_service
+              tasks_controller >> Edge(style="bold") >> task_service
+              users_controller >> Edge(style="bold") >> jwt_service
+              
+              # DTO mappings
+              user >> Edge(label="maps", style="dotted", color="blue") >> user_dto
+              project >> Edge(label="maps", style="dotted", color="blue") >> project_dto
+              task >> Edge(label="maps", style="dotted", color="blue") >> task_dto
+              comment >> Edge(label="maps", style="dotted", color="blue") >> comment_dto
+
+          print("✅ Diagrama de clases generado exitosamente")
+          EOF
+
+      - name: Generate detailed class documentation
+        run: |
+          mkdir -p docs
+          echo "# Documentación de Clases - Project Management API" > docs/classes.md
+          echo "" >> docs/classes.md
+          echo "## Modelos de Dominio" >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "### User" >> docs/classes.md
+          echo "Representa un usuario del sistema con propiedades como Username, Email, PasswordHash, Role." >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "### Project" >> docs/classes.md
+          echo "Representa un proyecto en el sistema con Name, Description, StartDate, EndDate, Status." >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "### ProjectTask" >> docs/classes.md
+          echo "Representa una tarea dentro de un proyecto con Title, Description, Status, Priority." >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "### TaskComment" >> docs/classes.md
+          echo "Representa un comentario en una tarea con Content, TaskId, CreatedById." >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "## Servicios" >> docs/classes.md
+          echo "- UserService: Lógica de usuarios y autenticación" >> docs/classes.md
+          echo "- ProjectService: Lógica de gestión de proyectos" >> docs/classes.md
+          echo "- TaskService: Lógica de gestión de tareas" >> docs/classes.md
+          echo "- JwtService: Gestión de tokens JWT" >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "## Controladores" >> docs/classes.md
+          echo "- UsersController: Endpoints de usuarios" >> docs/classes.md
+          echo "- ProjectsController: Endpoints de proyectos" >> docs/classes.md
+          echo "- TasksController: Endpoints de tareas" >> docs/classes.md
+          echo "" >> docs/classes.md
+          echo "*Documentación generada automáticamente*" >> docs/classes.md
+
+      - name: Verify diagram generation
+        run: |
+          if [ -f "docs/class_diagram.png" ]; then
+            echo "✅ Diagrama de clases generado correctamente"
+            ls -la docs/
+          else
+            echo "❌ Error: No se pudo generar el diagrama de clases"
+            exit 1
+          fi
+
+      - name: Update README with class diagram
+        run: |
+          # Remove existing class diagram section if it exists
+          sed -i '/## 🏗️ Diagrama de Clases/,/^## /{ /^## 🏗️ Diagrama de Clases/!{ /^## /!d; }; }' README.md
+          
+          # Add new class diagram section
+          echo "" >> README.md
+          echo "## 🏗️ Diagrama de Clases" >> README.md
+          echo "" >> README.md
+          echo "El siguiente diagrama muestra la arquitectura de clases del backend de la aplicación:" >> README.md
+          echo "" >> README.md
+          echo "![Diagrama de Clases](docs/class_diagram.png)" >> README.md
+          echo "" >> README.md
+          echo "### Arquitectura por Capas:" >> README.md
+          echo "" >> README.md
+          echo "#### 📁 Models (Modelos de Dominio)" >> README.md
+          echo "- User: Gestión de usuarios del sistema" >> README.md
+          echo "- Project: Representación de proyectos" >> README.md
+          echo "- ProjectTask: Tareas dentro de proyectos" >> README.md
+          echo "- TaskComment: Comentarios en tareas" >> README.md
+          echo "" >> README.md
+          echo "#### 📁 Services (Servicios de Negocio)" >> README.md
+          echo "- UserService: Lógica de usuarios y autenticación" >> README.md
+          echo "- ProjectService: Lógica de gestión de proyectos" >> README.md
+          echo "- TaskService: Lógica de gestión de tareas" >> README.md
+          echo "- JwtService: Gestión de tokens de autenticación" >> README.md
+          echo "" >> README.md
+          echo "#### 📁 Controllers (Controladores API)" >> README.md
+          echo "- UsersController: Endpoints de usuarios" >> README.md
+          echo "- ProjectsController: Endpoints de proyectos" >> README.md
+          echo "- TasksController: Endpoints de tareas" >> README.md
+          echo "" >> README.md
+          echo "*Diagrama generado automáticamente*" >> README.md
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add docs/class_diagram.png docs/classes.md README.md
+          
+          if git diff --staged --quiet; then
+            echo "No hay cambios que commitear"
+          else
+            git commit -m "🏗️ Actualizar diagrama de clases - Generar diagrama de arquitectura de clases del backend"
+            
+            git push
+            echo "✅ Diagrama de clases actualizado y pusheado al repositorio"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🏗️ Resumen de Generación de Diagrama de Clases" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Diagrama de clases generado exitosamente**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Archivos generados:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏗️ \`docs/class_diagram.png\` - Diagrama visual de clases" >> $GITHUB_STEP_SUMMARY
+          echo "- 📖 \`docs/classes.md\` - Documentación detallada de clases" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 \`README.md\` - Actualizado con el diagrama y descripción" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Componentes documentados:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Models: User, Project, ProjectTask, TaskComment" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 DTOs: Objetos de transferencia de datos" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Services: UserService, ProjectService, TaskService, JwtService" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Controllers: UsersController, ProjectsController, TasksController" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Data: ProjectManagementContext" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Arquitectura**: Clean Architecture con separación clara de responsabilidades" >> $GITHUB_STEP_SUMMARY

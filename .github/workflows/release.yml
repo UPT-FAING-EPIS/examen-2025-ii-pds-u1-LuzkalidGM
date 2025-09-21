@@ -1,0 +1,331 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'Automatic release'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      tag: ${{ steps.get-version.outputs.tag }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            TAG=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="${{ github.event.inputs.version }}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Tag: $TAG"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: vX.Y.Z (e.g., v1.0.0)"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+      - name: Check if release exists
+        id: check-release
+        run: |
+          TAG="${{ steps.get-version.outputs.tag }}"
+          
+          # Check if release already exists
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Release $TAG already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Release $TAG does not exist, proceeding..."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate changelog
+        id: changelog
+        if: steps.check-release.outputs.exists == 'false'
+        run: |
+          TAG="${{ steps.get-version.outputs.tag }}"
+          
+          # Get previous tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^$TAG$" | head -n 1)
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, using initial commit"
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          echo "## 🚀 Project Management System $TAG" > changelog.md
+          echo "" >> changelog.md
+          echo "### 📝 Release Notes:" >> changelog.md
+          
+          # Add release notes if provided
+          if [ "${{ github.event.inputs.release_notes }}" != "" ] && [ "${{ github.event.inputs.release_notes }}" != "Automatic release" ]; then
+            echo "${{ github.event.inputs.release_notes }}" >> changelog.md
+          else
+            echo "Release automático con mejoras y correcciones." >> changelog.md
+          fi
+          
+          echo "" >> changelog.md
+          echo "### 🔧 Características:" >> changelog.md
+          echo "- 🔐 **Autenticación**: Sistema JWT completo" >> changelog.md
+          echo "- 👥 **Usuarios**: Gestión de usuarios y roles" >> changelog.md
+          echo "- � **Proyectos**: CRUD completo de proyectos" >> changelog.md
+          echo "- 📋 **Tareas**: Gestión de tareas con prioridades" >> changelog.md
+          echo "- 💬 **Comentarios**: Sistema de colaboración" >> changelog.md
+          echo "- 🏗️ **Infrastructure**: Terraform + Azure" >> changelog.md
+          echo "- 🚀 **CI/CD**: GitHub Actions automatizado" >> changelog.md
+          echo "- 📊 **Quality**: Análisis con SonarQube" >> changelog.md
+          echo "" >> changelog.md
+          echo "### �️ Tecnologías:" >> changelog.md
+          echo "- .NET 8.0 + Entity Framework Core" >> changelog.md
+          echo "- Azure SQL Server" >> changelog.md
+          echo "- JWT Authentication" >> changelog.md
+          echo "- AutoMapper" >> changelog.md
+          echo "- Swagger/OpenAPI" >> changelog.md
+          echo "" >> changelog.md
+          echo "### 📦 Descargas disponibles:" >> changelog.md
+          echo "- 🪟 Windows (x64)" >> changelog.md
+          echo "- 🐧 Linux (x64)" >> changelog.md
+          echo "- 🍎 macOS (x64)" >> changelog.md
+          echo "" >> changelog.md
+          echo "*Generado automáticamente el $(date '+%d/%m/%Y %H:%M:%S')*" >> changelog.md
+          
+          # Set output for release body
+          RELEASE_BODY=$(cat changelog.md)
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: create-release
+        if: steps.check-release.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get-version.outputs.tag }}
+          release_name: Release ${{ steps.get-version.outputs.version }}
+          body: ${{ steps.changelog.outputs.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+
+      - name: Upload changelog
+        if: steps.check-release.outputs.exists == 'false'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./changelog.md
+          asset_name: CHANGELOG.md
+          asset_content_type: text/markdown
+
+  build-backend:
+    name: Build Backend for Release
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: needs.create-release.outputs.upload_url != ''
+    
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            runtime: win-x64
+            extension: zip
+          - os: linux
+            runtime: linux-x64
+            extension: tar.gz
+          - os: macos
+            runtime: osx-x64
+            extension: tar.gz
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: |
+          cd backend
+          dotnet restore
+
+      - name: Build for ${{ matrix.os }}
+        run: |
+          cd backend
+          dotnet publish \
+            --configuration Release \
+            --runtime ${{ matrix.runtime }} \
+            --self-contained true \
+            --output ./publish-${{ matrix.runtime }} \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true
+
+      - name: Create package documentation
+        run: |
+          cd backend/publish-${{ matrix.runtime }}
+          
+          echo 'Project Management System - Release ${{ needs.create-release.outputs.version }}' > README.txt
+          echo '================================================================' >> README.txt
+          echo '' >> README.txt
+          echo 'Este paquete contiene la API backend compilada para ${{ matrix.runtime }}.' >> README.txt
+          echo '' >> README.txt
+          echo 'Instalacion:' >> README.txt
+          echo '1. Extraer el archivo en el directorio deseado' >> README.txt
+          echo '2. Configurar la cadena de conexion en appsettings.json' >> README.txt
+          echo '3. Ejecutar el archivo principal' >> README.txt
+          echo '' >> README.txt
+          echo 'Documentacion: http://localhost:5000/swagger' >> README.txt
+          echo 'GitHub: https://github.com/UPT-FAING-EPIS/examen-2025-ii-pds-u1-LuzkalidGM' >> README.txt
+
+      - name: Create Windows package
+        if: matrix.runtime == 'win-x64'
+        run: |
+          cd backend/publish-${{ matrix.runtime }}
+          zip -r ../projectmanagement-api-${{ needs.create-release.outputs.version }}-${{ matrix.runtime }}.zip .
+
+      - name: Create Linux/macOS package
+        if: matrix.runtime != 'win-x64'
+        run: |
+          cd backend/publish-${{ matrix.runtime }}
+          tar -czf ../projectmanagement-api-${{ needs.create-release.outputs.version }}-${{ matrix.runtime }}.tar.gz .
+
+      - name: Upload package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./backend/projectmanagement-api-${{ needs.create-release.outputs.version }}-${{ matrix.runtime }}.${{ matrix.extension }}
+          asset_name: projectmanagement-api-${{ needs.create-release.outputs.version }}-${{ matrix.runtime }}.${{ matrix.extension }}
+          asset_content_type: application/octet-stream
+
+  update-documentation:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [create-release, build-backend]
+    if: always() && needs.create-release.result == 'success'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update README with release info
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          
+          # Add/update release section
+          if ! grep -q "## 📦 Releases" README.md; then
+            echo "" >> README.md
+            echo "## 📦 Releases" >> README.md
+            echo "" >> README.md
+          fi
+          
+          # Add current release info
+          echo "### � Latest Release: $VERSION" >> README.md
+          echo "" >> README.md
+          echo "**Descarga la aplicación:**" >> README.md
+          echo "- 🪟 **Windows**: [projectmanagement-api-$VERSION-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/$VERSION/projectmanagement-api-$VERSION-win-x64.zip)" >> README.md
+          echo "- 🐧 **Linux**: [projectmanagement-api-$VERSION-linux-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/$VERSION/projectmanagement-api-$VERSION-linux-x64.tar.gz)" >> README.md
+          echo "- 🍎 **macOS**: [projectmanagement-api-$VERSION-osx-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/$VERSION/projectmanagement-api-$VERSION-osx-x64.tar.gz)" >> README.md
+          echo "" >> README.md
+          echo "**Ver todos los releases:** [Releases Page](https://github.com/${{ github.repository }}/releases)" >> README.md
+          echo "" >> README.md
+          echo "*Última actualización: $(date '+%d/%m/%Y %H:%M:%S')*" >> README.md
+          echo "" >> README.md
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add README.md
+          
+          if git diff --staged --quiet; then
+            echo "No documentation updates to commit"
+          else
+            git commit -m "📦 Actualizar documentación para release ${{ needs.create-release.outputs.version }}"
+            git push
+          fi
+
+  notify-completion:
+    name: Notify Release Completion
+    runs-on: ubuntu-latest
+    needs: [create-release, build-backend, update-documentation]
+    if: always()
+    
+    steps:
+      - name: Release Summary
+        run: |
+          echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.create-release.result }}" = "success" ]; then
+            echo "✅ **Release Created**: ${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **Release URL**: [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Release Creation**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.build-backend.result }}" = "success" ]; then
+            echo "✅ **Packages Built**: Successfully for all platforms" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Package Building**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Available Downloads:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🪟 Windows (x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐧 Linux (x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 macOS (x64)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Final Status
+        run: |
+          echo "🎉 Release process completed!"
+          echo "📦 Version: ${{ needs.create-release.outputs.version }}"
+          echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.tag }}"

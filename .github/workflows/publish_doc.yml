@@ -1,0 +1,188 @@
+name: Generar Documentación GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**/*.cs'
+      - 'docs/**/*'
+      - '.github/workflows/publish_doc.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  generate-documentation:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create simple documentation
+        run: |
+          mkdir -p docs_site
+          
+          # Create simple index page
+          echo '<!DOCTYPE html>' > docs_site/index.html
+          echo '<html lang="es">' >> docs_site/index.html
+          echo '<head>' >> docs_site/index.html
+          echo '  <meta charset="UTF-8">' >> docs_site/index.html
+          echo '  <title>Project Management System</title>' >> docs_site/index.html
+          echo '  <style>' >> docs_site/index.html
+          echo '    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }' >> docs_site/index.html
+          echo '    h1 { color: #0366d6; }' >> docs_site/index.html
+          echo '    .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }' >> docs_site/index.html
+          echo '    img { max-width: 100%; }' >> docs_site/index.html
+          echo '  </style>' >> docs_site/index.html
+          echo '</head>' >> docs_site/index.html
+          echo '<body>' >> docs_site/index.html
+          echo '  <h1>🎯 Project Management System</h1>' >> docs_site/index.html
+          echo '  <p>Sistema de Gestión de Proyectos desarrollado con .NET 8.0 y Azure</p>' >> docs_site/index.html
+          
+          echo '  <div class="card">' >> docs_site/index.html
+          echo '    <h2>📖 API Reference</h2>' >> docs_site/index.html
+          echo '    <p>Documentación de endpoints REST</p>' >> docs_site/index.html
+          echo '    <a href="api.html">Ver API →</a>' >> docs_site/index.html
+          echo '  </div>' >> docs_site/index.html
+          
+          echo '  <div class="card">' >> docs_site/index.html
+          echo '    <h2>🏗️ Arquitectura</h2>' >> docs_site/index.html
+          echo '    <p>Clean Architecture con .NET 8.0</p>' >> docs_site/index.html
+          echo '    <ul>' >> docs_site/index.html
+          echo '      <li>Controllers: API endpoints</li>' >> docs_site/index.html
+          echo '      <li>Services: Business logic</li>' >> docs_site/index.html
+          echo '      <li>Models: Domain entities</li>' >> docs_site/index.html
+          echo '      <li>Data: Entity Framework</li>' >> docs_site/index.html
+          echo '    </ul>' >> docs_site/index.html
+          echo '  </div>' >> docs_site/index.html
+          
+          echo '  <div class="card">' >> docs_site/index.html
+          echo '    <h2>📊 Diagramas</h2>' >> docs_site/index.html
+          echo '    <h3>Infraestructura</h3>' >> docs_site/index.html
+          echo '    <img src="infrastructure_diagram.png" alt="Infraestructura" style="border: 1px solid #ddd;">' >> docs_site/index.html
+          echo '    <h3>Clases</h3>' >> docs_site/index.html
+          echo '    <img src="class_diagram.png" alt="Clases" style="border: 1px solid #ddd;">' >> docs_site/index.html
+          echo '  </div>' >> docs_site/index.html
+          
+          echo '  <div class="card">' >> docs_site/index.html
+          echo '    <h2>🛠️ Tecnologías</h2>' >> docs_site/index.html
+          echo '    <p>.NET 8.0 | Entity Framework | JWT | SQL Server | Azure | Terraform</p>' >> docs_site/index.html
+          echo '  </div>' >> docs_site/index.html
+          
+          echo '</body>' >> docs_site/index.html
+          echo '</html>' >> docs_site/index.html
+
+      - name: Create API documentation
+        run: |
+          echo '<!DOCTYPE html>' > docs_site/api.html
+          echo '<html lang="es">' >> docs_site/api.html
+          echo '<head>' >> docs_site/api.html
+          echo '  <meta charset="UTF-8">' >> docs_site/api.html
+          echo '  <title>API Reference</title>' >> docs_site/api.html
+          echo '  <style>' >> docs_site/api.html
+          echo '    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }' >> docs_site/api.html
+          echo '    .endpoint { background: #f6f8fa; padding: 15px; margin: 10px 0; border-radius: 5px; }' >> docs_site/api.html
+          echo '    .method { font-weight: bold; color: white; padding: 4px 8px; border-radius: 3px; }' >> docs_site/api.html
+          echo '    .get { background: #28a745; }' >> docs_site/api.html
+          echo '    .post { background: #0366d6; }' >> docs_site/api.html
+          echo '  </style>' >> docs_site/api.html
+          echo '</head>' >> docs_site/api.html
+          echo '<body>' >> docs_site/api.html
+          echo '  <h1>📖 API Reference</h1>' >> docs_site/api.html
+          echo '  <p><a href="index.html">← Volver al inicio</a></p>' >> docs_site/api.html
+          
+          echo '  <h2>🔐 Autenticación</h2>' >> docs_site/api.html
+          echo '  <p>JWT Bearer token en header Authorization</p>' >> docs_site/api.html
+          
+          echo '  <h2>👥 Usuarios</h2>' >> docs_site/api.html
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method post">POST</span> /api/users/register' >> docs_site/api.html
+          echo '    <p>Registrar nuevo usuario</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method post">POST</span> /api/users/login' >> docs_site/api.html
+          echo '    <p>Autenticar usuario</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '  <h2>📁 Proyectos</h2>' >> docs_site/api.html
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method get">GET</span> /api/projects' >> docs_site/api.html
+          echo '    <p>Listar proyectos</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method post">POST</span> /api/projects' >> docs_site/api.html
+          echo '    <p>Crear proyecto</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '  <h2>📋 Tareas</h2>' >> docs_site/api.html
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method get">GET</span> /api/tasks' >> docs_site/api.html
+          echo '    <p>Listar tareas</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '  <div class="endpoint">' >> docs_site/api.html
+          echo '    <span class="method post">POST</span> /api/tasks' >> docs_site/api.html
+          echo '    <p>Crear tarea</p>' >> docs_site/api.html
+          echo '  </div>' >> docs_site/api.html
+          
+          echo '</body>' >> docs_site/api.html
+          echo '</html>' >> docs_site/api.html
+
+      - name: Copy diagrams
+        run: |
+          cp docs/*.png docs_site/ 2>/dev/null || echo "No diagrams to copy"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Update README
+        run: |
+          if ! grep -q "📚 Documentación" README.md; then
+            echo "" >> README.md
+            echo "## 📚 Documentación" >> README.md
+            echo "" >> README.md
+            echo "### 🌐 [Ver Documentación Completa](https://UPT-FAING-EPIS.github.io/examen-2025-ii-pds-u1-LuzkalidGM/)" >> README.md
+            echo "" >> README.md
+            echo "La documentación incluye:" >> README.md
+            echo "- 📖 **API Reference**: Endpoints y autenticación" >> README.md
+            echo "- 🏗️ **Arquitectura**: Diseño del sistema" >> README.md
+            echo "- 📊 **Diagramas**: Infraestructura y clases" >> README.md
+            echo "" >> README.md
+          fi
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md || true
+          git diff --staged --quiet || (git commit -m "📚 Actualizar documentación" && git push)
+
+      - name: Summary
+        run: |
+          echo "## 📚 Documentación Desplegada" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Sitio generado exitosamente**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 [**Ver Documentación**](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY

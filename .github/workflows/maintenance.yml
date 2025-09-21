@@ -1,0 +1,415 @@
+name: Project Maintenance & Validation
+
+on:
+  schedule:
+    # Run weekly on Sundays at 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of maintenance check'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - security
+          - dependencies
+          - documentation
+          - infrastructure
+
+concurrency:
+  group: maintenance-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  validate-project-structure:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    
+    outputs:
+      structure_valid: ${{ steps.validate.outputs.valid }}
+      missing_files: ${{ steps.validate.outputs.missing }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate project structure
+        id: validate
+        run: |
+          echo "🔍 Validating project structure..."
+          
+          # Define required files and directories
+          REQUIRED_FILES=(
+            "README.md"
+            "infra/main.tf"
+            "backend/ProjectManagement.Api.csproj"
+            "backend/Program.cs"
+            "backend/Models/User.cs"
+            "backend/Services/IUserService.cs"
+            "backend/Controllers/UsersController.cs"
+            ".github/workflows/infra_diagram.yml"
+            ".github/workflows/class_diagram.yml"
+            ".github/workflows/publish_doc.yml"
+            ".github/workflows/sonar.yml"
+            ".github/workflows/deploy_app.yml"
+            ".github/workflows/release.yml"
+          )
+          
+          MISSING_FILES=()
+          
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              MISSING_FILES+=("$file")
+              echo "❌ Missing: $file"
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+          
+          if [ ${#MISSING_FILES[@]} -eq 0 ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "missing=" >> $GITHUB_OUTPUT
+            echo "🎉 All required files are present!"
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "missing=${MISSING_FILES[*]}" >> $GITHUB_OUTPUT
+            echo "⚠️ Found ${#MISSING_FILES[@]} missing files"
+          fi
+
+      - name: Validate backend structure
+        run: |
+          echo "🔍 Validating backend architecture..."
+          
+          # Check for Clean Architecture layers
+          LAYERS=(
+            "Controllers"
+            "Services"
+            "Models"
+            "DTOs"
+          )
+          
+          for layer in "${LAYERS[@]}"; do
+            if [ -d "backend/$layer" ]; then
+              COUNT=$(find "backend/$layer" -name "*.cs" | wc -l)
+              echo "✅ $layer: $COUNT files"
+            else
+              echo "⚠️ $layer: Directory not found"
+            fi
+          done
+
+      - name: Check workflow files
+        run: |
+          echo "🔍 Validating GitHub Actions workflows..."
+          
+          WORKFLOW_COUNT=$(find .github/workflows -name "*.yml" | wc -l)
+          echo "📁 Found $WORKFLOW_COUNT workflow files"
+          
+          for workflow in .github/workflows/*.yml; do
+            if [ -f "$workflow" ]; then
+              echo "✅ $(basename "$workflow")"
+              
+              # Basic YAML validation
+              if ! python3 -c "import yaml; yaml.safe_load(open('$workflow'))" 2>/dev/null; then
+                echo "❌ Invalid YAML in $(basename "$workflow")"
+              fi
+            fi
+          done
+
+  check-dependencies:
+    name: Check Dependencies & Security
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type == 'full' || github.event.inputs.check_type == 'dependencies' || github.event.inputs.check_type == 'security' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Check outdated packages
+        run: |
+          cd backend
+          echo "🔍 Checking for outdated NuGet packages..."
+          
+          dotnet list package --outdated > outdated_packages.txt 2>&1 || true
+          
+          if grep -q "No outdated packages" outdated_packages.txt; then
+            echo "✅ All packages are up to date!"
+          else
+            echo "📦 Found outdated packages:"
+            cat outdated_packages.txt
+          fi
+
+      - name: Security audit
+        run: |
+          cd backend
+          echo "🔒 Running security audit..."
+          
+          # Check for vulnerable packages
+          dotnet list package --vulnerable 2>&1 | tee vulnerable_packages.txt
+          
+          if grep -q "No vulnerable packages" vulnerable_packages.txt; then
+            echo "✅ No vulnerable packages found!"
+          else
+            echo "⚠️ Found vulnerable packages - review required"
+          fi
+
+      - name: Check for deprecated features
+        run: |
+          echo "🔍 Checking for deprecated .NET features..."
+          
+          # Search for deprecated attributes/methods
+          DEPRECATED_PATTERNS=(
+            "Obsolete"
+            "WebApi"
+            "System.Web"
+          )
+          
+          for pattern in "${DEPRECATED_PATTERNS[@]}"; do
+            COUNT=$(grep -r "$pattern" backend/ --include="*.cs" | wc -l)
+            if [ $COUNT -gt 0 ]; then
+              echo "⚠️ Found $COUNT occurrences of '$pattern'"
+              grep -r "$pattern" backend/ --include="*.cs" | head -5
+            else
+              echo "✅ No deprecated '$pattern' found"
+            fi
+          done
+
+  validate-infrastructure:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type == 'full' || github.event.inputs.check_type == 'infrastructure' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Format Check
+        run: |
+          cd infra
+          echo "🔍 Checking Terraform formatting..."
+          
+          if terraform fmt -check -diff; then
+            echo "✅ Terraform files are properly formatted"
+          else
+            echo "⚠️ Terraform files need formatting"
+          fi
+
+      - name: Terraform Validation
+        run: |
+          cd infra
+          echo "🔍 Validating Terraform configuration..."
+          
+          terraform init -backend=false
+          
+          if terraform validate; then
+            echo "✅ Terraform configuration is valid"
+          else
+            echo "❌ Terraform configuration has errors"
+            exit 1
+          fi
+
+      - name: Check for best practices
+        run: |
+          cd infra
+          echo "🔍 Checking Terraform best practices..."
+          
+          # Check for missing tags
+          if grep -q "tags" *.tf; then
+            echo "✅ Found resource tags"
+          else
+            echo "⚠️ Consider adding tags to resources"
+          fi
+          
+          # Check for hardcoded values
+          if grep -q "todo\|fixme\|hack" *.tf; then
+            echo "⚠️ Found TODO/FIXME comments in Terraform files"
+            grep -n "todo\|fixme\|hack" *.tf
+          else
+            echo "✅ No TODO/FIXME comments found"
+          fi
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type == 'full' || github.event.inputs.check_type == 'documentation' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check README completeness
+        run: |
+          echo "📚 Checking README.md completeness..."
+          
+          REQUIRED_SECTIONS=(
+            "# Project Management System"
+            "## Descripción"
+            "## Tecnologías"
+            "## Instalación"
+            "## API"
+            "## Infraestructura"
+          )
+          
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✅ Found: $section"
+            else
+              echo "⚠️ Missing: $section"
+            fi
+          done
+
+      - name: Check documentation links
+        run: |
+          echo "🔗 Checking documentation links..."
+          
+          # Extract URLs from README
+          URLS=$(grep -oE 'https?://[^)]+' README.md | head -10)
+          
+          for url in $URLS; do
+            if curl -s --head "$url" | head -n 1 | grep -q "200 OK"; then
+              echo "✅ $url"
+            else
+              echo "⚠️ $url (might be unreachable)"
+            fi
+          done
+
+      - name: Check code documentation
+        run: |
+          echo "📝 Checking code documentation..."
+          
+          # Count XML documentation comments in C# files
+          XML_DOCS=$(grep -r "///" backend/ --include="*.cs" | wc -l)
+          CS_FILES=$(find backend/ -name "*.cs" | wc -l)
+          
+          echo "📊 XML documentation comments: $XML_DOCS"
+          echo "📊 C# files: $CS_FILES"
+          
+          if [ $CS_FILES -gt 0 ]; then
+            COVERAGE=$((XML_DOCS * 100 / CS_FILES))
+            echo "📊 Documentation coverage: ~$COVERAGE%"
+            
+            if [ $COVERAGE -lt 30 ]; then
+              echo "⚠️ Consider adding more documentation comments"
+            else
+              echo "✅ Good documentation coverage"
+            fi
+          fi
+
+  generate-report:
+    name: Generate Maintenance Report
+    runs-on: ubuntu-latest
+    needs: [validate-project-structure, check-dependencies, validate-infrastructure, documentation-check]
+    if: always()
+    
+    steps:
+      - name: Create maintenance report
+        run: |
+          echo "## 🔧 Project Maintenance Report" >> $GITHUB_STEP_SUMMARY
+          echo "*Generated on $(date '+%d/%m/%Y %H:%M:%S')*" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Project Structure
+          echo "### 📁 Project Structure" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.validate-project-structure.result }}" = "success" ]; then
+            if [ "${{ needs.validate-project-structure.outputs.structure_valid }}" = "true" ]; then
+              echo "✅ **Status**: All required files present" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ **Status**: Missing files detected" >> $GITHUB_STEP_SUMMARY
+              echo "**Missing**: ${{ needs.validate-project-structure.outputs.missing_files }}" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ **Status**: Validation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Dependencies
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Dependencies & Security" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.check-dependencies.result }}" = "success" ]; then
+            echo "✅ **Status**: Dependencies checked successfully" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.check-dependencies.result }}" = "skipped" ]; then
+            echo "⚪ **Status**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Check failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Infrastructure
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏗️ Infrastructure" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.validate-infrastructure.result }}" = "success" ]; then
+            echo "✅ **Status**: Infrastructure validation passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.validate-infrastructure.result }}" = "skipped" ]; then
+            echo "⚪ **Status**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Validation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Documentation
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📚 Documentation" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.documentation-check.result }}" = "success" ]; then
+            echo "✅ **Status**: Documentation check passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.documentation-check.result }}" = "skipped" ]; then
+            echo "⚪ **Status**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Check failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Overall Status
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Overall Project Health" >> $GITHUB_STEP_SUMMARY
+          
+          SUCCESS_COUNT=0
+          TOTAL_COUNT=0
+          
+          for result in "${{ needs.validate-project-structure.result }}" "${{ needs.check-dependencies.result }}" "${{ needs.validate-infrastructure.result }}" "${{ needs.documentation-check.result }}"; do
+            if [ "$result" != "skipped" ]; then
+              TOTAL_COUNT=$((TOTAL_COUNT + 1))
+              if [ "$result" = "success" ]; then
+                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              fi
+            fi
+          done
+          
+          if [ $TOTAL_COUNT -gt 0 ]; then
+            HEALTH_SCORE=$((SUCCESS_COUNT * 100 / TOTAL_COUNT))
+            echo "**Health Score**: $HEALTH_SCORE% ($SUCCESS_COUNT/$TOTAL_COUNT checks passed)" >> $GITHUB_STEP_SUMMARY
+            
+            if [ $HEALTH_SCORE -eq 100 ]; then
+              echo "🟢 **Project Status**: Excellent" >> $GITHUB_STEP_SUMMARY
+            elif [ $HEALTH_SCORE -ge 80 ]; then
+              echo "🟡 **Project Status**: Good" >> $GITHUB_STEP_SUMMARY
+            elif [ $HEALTH_SCORE -ge 60 ]; then
+              echo "🟠 **Project Status**: Needs Attention" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "🔴 **Project Status**: Critical Issues" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚪ **Project Status**: No checks performed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "- Review any failed checks above" >> $GITHUB_STEP_SUMMARY
+          echo "- Update dependencies if needed" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor security advisories" >> $GITHUB_STEP_SUMMARY
+          echo "- Keep documentation up to date" >> $GITHUB_STEP_SUMMARY
+
+      - name: Final summary
+        run: |
+          echo "🔧 Maintenance check completed!"
+          echo "📊 Check type: ${{ github.event.inputs.check_type || 'scheduled' }}"
+          echo "📅 Date: $(date '+%d/%m/%Y %H:%M:%S')"

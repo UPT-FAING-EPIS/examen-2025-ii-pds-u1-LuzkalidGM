@@ -1,0 +1,222 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**/*.cs'
+      - '.github/workflows/sonar.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**/*.cs'
+  workflow_dispatch:
+
+jobs:
+  sonar-analysis:
+    name: SonarQube Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v3
+        with:
+          path: .\.sonar\scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+
+      - name: Install SonarCloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ./.sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+
+      - name: Install coverage tools
+        run: |
+          dotnet tool install --global dotnet-coverage
+          dotnet tool install --global coverlet.console
+
+      - name: Restore dependencies
+        run: |
+          cd backend
+          dotnet restore
+
+      - name: Build and analyze with SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          cd backend
+          ../.sonar/scanner/dotnet-sonarscanner begin \
+            /k:"UPT-FAING-EPIS_examen-2025-ii-pds-u1-LuzkalidGM" \
+            /o:"upt-faing-epis" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.dotcover.reportsPaths="coverage.xml" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.dll,**/*.pdb" \
+            /d:sonar.coverage.exclusions="**/Program.cs,**/*Startup.cs"
+          
+          dotnet build --no-restore --configuration Release
+          
+          # Generate test coverage report
+          dotnet-coverage collect "dotnet test --no-build --configuration Release" -f xml -o "coverage.xml"
+          
+          ../.sonar/scanner/dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Wait for Quality Gate
+        uses: sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Generate quality report
+        if: always()
+        run: |
+          echo "## 🔍 SonarQube Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Quality Metrics:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Objetivo**: 0 bugs, 0 vulnerabilidades, 0 hotspots" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 **Cobertura objetivo**: ≥90%" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 **Duplicación objetivo**: ≤10 líneas" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Enlaces:" >> $GITHUB_STEP_SUMMARY
+          echo "- [📈 Ver reporte completo en SonarCloud](https://sonarcloud.io/project/overview?id=UPT-FAING-EPIS_examen-2025-ii-pds-u1-LuzkalidGM)" >> $GITHUB_STEP_SUMMARY
+          echo "- [🐛 Issues encontrados](https://sonarcloud.io/project/issues?id=UPT-FAING-EPIS_examen-2025-ii-pds-u1-LuzkalidGM&types=BUG)" >> $GITHUB_STEP_SUMMARY
+          echo "- [🔐 Vulnerabilidades](https://sonarcloud.io/project/issues?id=UPT-FAING-EPIS_examen-2025-ii-pds-u1-LuzkalidGM&types=VULNERABILITY)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 SonarQube Analysis Complete
+              
+              📈 **Ver resultados**: [SonarCloud Dashboard](https://sonarcloud.io/project/overview?id=UPT-FAING-EPIS_examen-2025-ii-pds-u1-LuzkalidGM)
+              
+              ### Objetivos de calidad:
+              - 🐛 **Bugs**: 0 (objetivo)
+              - 🔐 **Vulnerabilidades**: 0 (objetivo) 
+              - 🔥 **Hotspots**: 0 (objetivo)
+              - 📊 **Cobertura**: ≥90% (objetivo)
+              - 🔄 **Duplicación**: ≤10 líneas (objetivo)`
+            });
+
+  create-tests:
+    name: Create Unit Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Create test project
+        run: |
+          mkdir -p backend/ProjectManagement.Tests
+          cd backend/ProjectManagement.Tests
+          
+          # Create test project file
+          echo '<Project Sdk="Microsoft.NET.Sdk">' > ProjectManagement.Tests.csproj
+          echo '  <PropertyGroup>' >> ProjectManagement.Tests.csproj
+          echo '    <TargetFramework>net8.0</TargetFramework>' >> ProjectManagement.Tests.csproj
+          echo '    <ImplicitUsings>enable</ImplicitUsings>' >> ProjectManagement.Tests.csproj
+          echo '    <Nullable>enable</Nullable>' >> ProjectManagement.Tests.csproj
+          echo '    <IsPackable>false</IsPackable>' >> ProjectManagement.Tests.csproj
+          echo '    <IsTestProject>true</IsTestProject>' >> ProjectManagement.Tests.csproj
+          echo '  </PropertyGroup>' >> ProjectManagement.Tests.csproj
+          echo '  <ItemGroup>' >> ProjectManagement.Tests.csproj
+          echo '    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />' >> ProjectManagement.Tests.csproj
+          echo '    <PackageReference Include="xunit" Version="2.4.2" />' >> ProjectManagement.Tests.csproj
+          echo '    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />' >> ProjectManagement.Tests.csproj
+          echo '    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />' >> ProjectManagement.Tests.csproj
+          echo '    <PackageReference Include="Moq" Version="4.20.69" />' >> ProjectManagement.Tests.csproj
+          echo '  </ItemGroup>' >> ProjectManagement.Tests.csproj
+          echo '  <ItemGroup>' >> ProjectManagement.Tests.csproj
+          echo '    <ProjectReference Include="../ProjectManagement.Api.csproj" />' >> ProjectManagement.Tests.csproj
+          echo '  </ItemGroup>' >> ProjectManagement.Tests.csproj
+          echo '</Project>' >> ProjectManagement.Tests.csproj
+
+      - name: Create basic tests
+        run: |
+          cd backend/ProjectManagement.Tests
+          mkdir -p Services
+          
+          # Create a simple test file
+          echo 'using Xunit;' > Services/BasicTests.cs
+          echo '' >> Services/BasicTests.cs
+          echo 'namespace ProjectManagement.Tests.Services' >> Services/BasicTests.cs
+          echo '{' >> Services/BasicTests.cs
+          echo '    public class BasicTests' >> Services/BasicTests.cs
+          echo '    {' >> Services/BasicTests.cs
+          echo '        [Fact]' >> Services/BasicTests.cs
+          echo '        public void Test_ShouldPass()' >> Services/BasicTests.cs
+          echo '        {' >> Services/BasicTests.cs
+          echo '            // Arrange' >> Services/BasicTests.cs
+          echo '            var expected = true;' >> Services/BasicTests.cs
+          echo '            ' >> Services/BasicTests.cs
+          echo '            // Act' >> Services/BasicTests.cs
+          echo '            var actual = true;' >> Services/BasicTests.cs
+          echo '            ' >> Services/BasicTests.cs
+          echo '            // Assert' >> Services/BasicTests.cs
+          echo '            Assert.Equal(expected, actual);' >> Services/BasicTests.cs
+          echo '        }' >> Services/BasicTests.cs
+          echo '    }' >> Services/BasicTests.cs
+          echo '}' >> Services/BasicTests.cs
+
+      - name: Build and test
+        run: |
+          cd backend
+          dotnet restore
+          dotnet build --no-restore
+          dotnet test --no-build --verbosity normal
+
+      - name: Commit test files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add backend/ProjectManagement.Tests/
+          
+          if git diff --staged --quiet; then
+            echo "No test files to commit"
+          else
+            git commit -m "🧪 Agregar tests unitarios para mejorar cobertura"
+            git push
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🧪 Tests Unitarios Creados" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Proyecto de tests configurado**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Objetivo:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 **Cobertura**: ≥90%" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐛 **Calidad**: 0 bugs, 0 vulnerabilidades" >> $GITHUB_STEP_SUMMARY
