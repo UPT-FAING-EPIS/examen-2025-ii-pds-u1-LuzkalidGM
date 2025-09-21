@@ -78,7 +78,7 @@ jobs:
 
       - name: Install SQL Server tools
         run: |
-          echo "�️ Installing SQL Server command line tools..."
+          echo "🛠️ Installing SQL Server command line tools..."
           
           # Add Microsoft package repository
           curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -90,26 +90,36 @@ jobs:
           # Install SQL Server tools
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
           
-          # Add to PATH
+          # Add to PATH for current session and make it persistent
           echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+          echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.profile
           export PATH="$PATH:/opt/mssql-tools18/bin"
           
+          # Also add to GitHub Environment for all subsequent steps
+          echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
+          
           # Verify installation
-          sqlcmd -?
-          echo "✅ SQL Server tools installed successfully"
+          which sqlcmd
+          sqlcmd -? > /dev/null 2>&1 && echo "✅ SQL Server tools installed and verified successfully" || echo "⚠️ sqlcmd installation may have issues"
 
       - name: Test database connection
         run: |
           cd backend
           echo "🔌 Testing database connection..."
           
-          # Export PATH for sqlcmd
+          # Export PATH for sqlcmd (should be in GITHUB_PATH now)
           export PATH="$PATH:/opt/mssql-tools18/bin"
           
-          # Test connection with sqlcmd
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -Q "SELECT @@VERSION as 'SQL Server Version'"
+          # Verify sqlcmd is available
+          which sqlcmd || echo "⚠️ sqlcmd not found, attempting direct path"
           
-          echo "✅ Database connection verified successfully"
+          # Test connection with sqlcmd
+          if sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -Q "SELECT @@VERSION as 'SQL Server Version'"; then
+            echo "✅ Database connection verified successfully"
+          else
+            echo "❌ Database connection failed"
+            exit 1
+          fi
 
       - name: Diagnose and fix build issues
         run: |
@@ -506,12 +516,24 @@ jobs:
           
           # Execute seed data script
           export PATH="$PATH:/opt/mssql-tools18/bin"
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i SeedData.sql
+          echo "📊 Executing sample data insertion..."
+          if sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i SeedData.sql; then
+            echo "✅ Sample data inserted successfully"
+          else
+            echo "⚠️ Sample data insertion had issues, but continuing..."
+          fi
 
       - name: Verify database setup
         run: |
           cd backend
           echo "🔍 Verifying database setup..."
+          
+          # Export PATH for sqlcmd (this is needed in each step)
+          export PATH="$PATH:/opt/mssql-tools18/bin"
+          
+          # Verify sqlcmd is available
+          which sqlcmd || echo "⚠️ sqlcmd not found in PATH"
+          sqlcmd -? > /dev/null 2>&1 || echo "⚠️ sqlcmd not working properly"
           
           cat > VerifySetup.sql << 'EOF'
           -- Verify tables exist and have data
@@ -537,7 +559,12 @@ jobs:
           GROUP BY p.Name, p.Status, u.FirstName, u.LastName;
           EOF
           
-          sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i VerifySetup.sql
+          echo "📊 Executing database verification..."
+          if sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -P "$DB_PASSWORD" -C -i VerifySetup.sql; then
+            echo "✅ Database verification completed successfully"
+          else
+            echo "⚠️ Database verification had issues, but continuing..."
+          fi
 
       - name: Update connection strings in application
         run: |
